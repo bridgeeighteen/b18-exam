@@ -1,0 +1,47 @@
+<?php 
+include 'config.php';
+?>
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>信息登记 - 十八桥社区入站测试系统</title>
+    <link rel="stylesheet" href="./vendor/twbs/bootstrap/dist/css/bootstrap.min.css">
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"></script>
+</head>
+
+<?php include './views/nav.php'; ?>
+                <h2>信息登记</h2>
+                <h5>在正式开始测试前，请填写这些基本信息以便我们核查邀请码使用情况。请记住，将邀请码转让给他人是绝对禁止的，这会导致账号被封禁。</h5>
+                <form action="exam.php" method="post">
+                    <div class="form-group">
+                      <label for="InputUsername">用户名</label>
+                      <input type="username" class="form-control" id="InputUsername" aria-describedby="usernameHelp" name="username" required>
+                      <small id="usernameHelp" class="form-text text-muted">如果测试通过后想更换，可以在注册时填写。</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="InputEmail">电子邮件地址</label>
+                        <input type="email" class="form-control" id="InputEmail" aria-describedby="emailHelp" name="email" required>
+                        <small id="emailHelp" class="form-text text-muted">请一定确保这里的地址与注册的地址完全一致，否则账号将因被视为“邀请码滥用”遭到封禁。</small>
+                      </div>
+                    <div class="form-group form-check">
+                      <input type="checkbox" class="form-check-input" id="ruleCheck" required>
+                      <label class="form-check-label" for="ruleCheck">我已阅读<a href="https://www.bridge18.rr.nu/p/3-code-of-user-conduct">用户行为准则</a>，并确认完全理解其内容。</label>
+                    </div>
+                    <div id="turnstile"></div>
+                    <button type="submit" class="btn btn-primary">开始测试</button>
+                    <script>
+                        turnstile.ready(function () {
+                            turnstile.render('#turnstile', {
+                                sitekey: <?php echo "'" . htmlspecialchars(CF_TURNSTILE_SITEKEY) . "'" ?>,
+                                callback: function (token) {
+                                    console.log(`Turnstile 成功通过 (${token})`);
+                                    },
+                            });
+                        });
+                    </script>
+                 </form>
+<?php include './views/footer.php'; ?>

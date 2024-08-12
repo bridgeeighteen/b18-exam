@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="977.44"
+   height="263.241"
+   viewBox="0 0 258.61433 69.649182"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.3.2 (091e20e, 2023-11-25, custom)"
+   sodipodi:docname="logo.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <title
+     id="title1">十八桥图形标志</title>
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     inkscape:zoom="0.93974427"
+     inkscape:cx="410.75004"
+     inkscape:cy="237.83066"
+     inkscape:window-width="1920"
+     inkscape:window-height="991"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1">
+    <linearGradient
+       id="linearGradient6"
+       inkscape:collect="always">
+      <stop
+         style="stop-color:#c9334e;stop-opacity:1;"
+         offset="0.10351967"
+         id="stop7" />
+      <stop
+         style="stop-color:#ed556a;stop-opacity:1;"
+         offset="0.89855075"
+         id="stop8" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient6"
+       id="linearGradient8"
+       x1="76.84391"
+       y1="82.335785"
+       x2="355.96341"
+       y2="112.68311"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(-45.769741,-20.397385)" />
+    <filter
+       id="mask-powermask-path-effect9_inverse"
+       inkscape:label="filtermask-powermask-path-effect9"
+       style="color-interpolation-filters:sRGB"
+       height="100"
+       width="100"
+       x="-50"
+       y="-50">
+      <feColorMatrix
+         id="mask-powermask-path-effect9_primitive1"
+         values="1"
+         type="saturate"
+         result="fbSourceGraphic" />
+      <feColorMatrix
+         id="mask-powermask-path-effect9_primitive2"
+         values="-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0 "
+         in="fbSourceGraphic" />
+    </filter>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath9">
+      <rect
+         style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:11.7424;stroke-dasharray:none;stroke-opacity:1"
+         id="rect9"
+         width="258.61432"
+         height="69.654175"
+         x="32.040607"
+         y="-84.563484"
+         transform="scale(1,-1)" />
+    </clipPath>
+  </defs>
+  <g
+     inkscape:label="图层 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <path
+       id="path1"
+       clip-path="url(#clipPath9)"
+       style="fill:none;stroke:url(#linearGradient8);stroke-width:21.4312"
+       transform="translate(-32.040609,-14.91442)"
+       d="M 296.89688,146.01543 A 135.46666,120.38541 0 0 1 161.43022,266.40083 135.46666,120.38541 0 0 1 25.963562,146.01543 135.46666,120.38541 0 0 1 161.43022,25.63002 135.46666,120.38541 0 0 1 296.89688,146.01543 Z" />
+  </g>
+  <metadata
+     id="metadata1">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:title>十八桥图形标志</dc:title>
+        <dc:date>2024/6</dc:date>
+        <dc:creator>
+          <cc:Agent>
+            <dc:title>Diamochang</dc:title>
+          </cc:Agent>
+        </dc:creator>
+        <dc:rights>
+          <cc:Agent>
+            <dc:title>© 2024 Diamochang, The Bridge Eighteen Community and Favocas Organization.</dc:title>
+          </cc:Agent>
+        </dc:rights>
+        <dc:publisher>
+          <cc:Agent>
+            <dc:title>十八桥</dc:title>
+          </cc:Agent>
+        </dc:publisher>
+        <dc:language>zh-CN</dc:language>
+        <dc:subject>
+          <rdf:Bag>
+            <rdf:li>标志</rdf:li>
+          </rdf:Bag>
+        </dc:subject>
+        <dc:description>十八桥的拱桥图形标志。</dc:description>
+        <dc:contributor>
+          <cc:Agent>
+            <dc:title>Diamochang</dc:title>
+          </cc:Agent>
+        </dc:contributor>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+</svg>

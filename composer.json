@@ -1,0 +1,20 @@
+{
+    "name": "bridgeeighteen/exam",
+    "description": "A simple entrance exam system for Bridge Eighteen.",
+    "license": "LGPL-3.0+",
+    "version": "1.0.0-beta",
+    "authors": [
+        {
+            "name": "Diamochang (Mike Wang)",
+            "email": "diamochang@yeah.net",
+            "homepage": "https://imdchs.rf.gd",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "twbs/bootstrap": "4.6.2",
+        "components/jquery": "3.5.1",
+        "fluxsoft/php-turnstile": "^0.1.3",
+        "phpoffice/phpword": "^1.2"
+    }
+}
