@@ -11,11 +11,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Calculate score
     $score = calculateScore($answers);
 
+    // Store results
+    if (is_numeric($score)) {
+        storeResults($userId, $score, $invitationCode);
+    } else {
+        error_log("Score is not numeric: " . print_r($score, true));
+        // Handle error, e.g., redirect to an error page
+    }
+
     // Generate invitation code
     $invitationCode = generateInvitationCode($score);
-
-    // Store results
-    storeResults($userId, $score, $invitationCode);
 
     // Record start and end times
     recordTimes($userId);
@@ -86,6 +91,9 @@ function calculateScore($answers) {
         // Handle exceptions here
         error_log("Error in calculateScore: " . $e->getMessage());
     }
+
+    // Ensure $totalScore is numeric
+    $totalScore = (int)$totalScore;
 
     return $totalScore;
 }
@@ -244,6 +252,8 @@ function generateInvitationCode($score) {
     // Generate an invitation code only if the score is above the threshold
     if ($score >= $threshold) {
         $code = generateKey();
+        // Ensure the generated code is a string
+        $code = is_array($code) ? implode('', $code) : $code;
     } else {
         $code = '无（未达到条件）';
     }
