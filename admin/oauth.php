@@ -7,7 +7,7 @@ session_start();
 $api_site = API_SITE;
 $client_id = OAUTH_CLIENT_ID;
 $client_secret = OAUTH_CLIENT_SECRET;
-$redirect_uri = 'http://' . SITE . '/admin/oauth.php';
+$redirect_uri = 'https://' . SITE . '/admin/oauth.php';
 
 if (!isset($_GET['code'])) {
     header("Location: https://{$api_site}/oauth/authorize?client_id={$client_id}&response_type=code&redirect_uri={$redirect_uri}&scope=user.read");
