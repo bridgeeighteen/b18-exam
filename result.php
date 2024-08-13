@@ -25,7 +25,7 @@ function calculateScore($answers) {
     global $db;
 
     $totalQuestions = 0;
-    $correctAnswers = 0;
+    $totalScore = 0; // Initialize total score
 
     // Establish database connection
     $conn = connectToDatabase();
@@ -56,24 +56,30 @@ function calculateScore($answers) {
             $correctAnswersArr = explode(',', $correctAnswer);
             sort($correctAnswersArr);
             sort($submittedAnswers);
-            if (implode(',', $correctAnswersArr) === implode(',', $submittedAnswers)) {
-                $correctAnswers++;
+
+            // Determine the score for the multiple-choice question
+            $isFullCorrect = (implode(',', $correctAnswersArr) === implode(',', $submittedAnswers));
+            $hasNoIncorrect = !array_diff($submittedAnswers, $correctAnswersArr);
+            $scoreForQuestion = 0;
+            if ($isFullCorrect && $hasNoIncorrect) {
+                $scoreForQuestion = SCORE_CORRECT_QUESTION; // Full score for multiple-choice
+            } elseif ($hasNoIncorrect) {
+                $scoreForQuestion = SCORE_PARTIAL_MULTIPLE_QUESTION; // Partial score for multiple-choice
             }
+
+            $totalScore += $scoreForQuestion;
         } else {
             // Single-choice question
             if (in_array($correctAnswer, $submittedAnswers)) {
-                $correctAnswers++;
+                $totalScore += SCORE_CORRECT_QUESTION; // Full score for single-choice
             }
         }
     }
 
-    // Calculate the score
-    $score = floor(($correctAnswers / $totalQuestions) * 100);
-
     // Close the database connection
     closeDatabaseConnection($conn);
 
-    return $score;
+    return $totalScore;
 }
 
 function storeResults($userId, $score, $invitationCode) {
@@ -109,7 +115,7 @@ function recordTimes($userId) {
     // Check if user violated time limit
     if ($currentServerTime > $expectedEndTime) {
         // User violated time limit
-        $cheatDetected = true;
+        $timeCheatDetected = true;
 
         // Remove user record
         $stmt = $conn->prepare("DELETE FROM users WHERE id = ?");
@@ -146,11 +152,13 @@ function extractKey($data) {
 // Generates a random string of specified length containing letters and digits
 function generateRandomString($length = 8) {
     $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    $randomString = '';
+    $charsArray = [];
     for ($i = 0; $i < $length; $i++) {
-        $randomString .= CODE_TYPE . "@" . $characters[rand(0, strlen($characters) - 1)];
+        $charsArray[] = $characters[random_int(0, strlen($characters) - 1)];
     }
-    return $randomString;
+    $randomString = implode('', $charsArray);
+    $generatedString = CODE_TYPE . "@" . $randomString;
+    return $generatedString;
 }
 
 // Sends a request to generate a door key
@@ -253,7 +261,7 @@ function generateInvitationCode($score) {
                         测试结果
                     </div>
                     <div class="card-body">
-                        <?php if (isset($cheatDetected) && $cheatDetected): ?>
+                        <?php if (isset($timeCheatDetected) && $timeCheatDetected): ?>
                             <div class="alert alert-danger" role="alert">
                                 作弊检测：你违反了测试的时间限制。你的信息已被删除，请重新开始测试。
                             </div>
