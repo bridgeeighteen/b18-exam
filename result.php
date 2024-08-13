@@ -29,13 +29,13 @@ function calculateScore($answers) {
 
     try {
         // Establish database connection
-        $conn = connectToDatabase();
+        // Assuming $db is already defined globally
+        // No need to call a separate function as it's already done in the main script
 
         // Retrieve questions and their answers from the database once
-        $stmt = $conn->prepare("SELECT * FROM questions");
+        $stmt = $db->prepare("SELECT * FROM questions");
         $stmt->execute();
-        $result = $stmt->get_result();
-        $questions = $result->fetch_all(MYSQLI_ASSOC);
+        $questions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($questions as $question) {
             $totalQuestions++;
@@ -56,6 +56,9 @@ function calculateScore($answers) {
                 return is_string($item) ? strtolower($item) : strtolower((string)$item);
             }, $submittedAnswers));
 
+            // Ensure $submittedAnswerStr is not an empty string
+            $submittedAnswerStr = $submittedAnswerStr ?: '';
+
             // Check if the question is a single-choice or multiple-choice
             if (stripos($question['answer'], ',') !== false) {
                 // Multiple-choice question
@@ -75,9 +78,8 @@ function calculateScore($answers) {
             }
         }
 
-        // Close the database connection
-        closeDatabaseConnection($conn);
-    } catch (Exception $e) {
+        // No need to close the database connection since it's managed by PDO
+    } catch (PDOException $e) {
         // Handle exceptions here
         error_log("Error in calculateScore: " . $e->getMessage());
     }

@@ -9,23 +9,24 @@ $secretKey = CF_TURNSTILE_SECRET;
 $turnstile = new Turnstile($secretKey);
 $verifyResponse = $turnstile->verify($_POST['cf-turnstile-response'], $_SERVER['REMOTE_ADDR']);
 
+try {
+  $db = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
+  $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+  die("Connection failed: " . $e->getMessage());
+}
+
 if ($verifyResponse->success) {
-  // 先验证 Turnstile，再创建数据库连接
-  try {
-    $db = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
-    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-  } catch (PDOException $e) {
-    die("Connection failed: " . $e->getMessage());
-  }
+  // Turnstile 验证成功
 } else {
   if ($verifyResponse->hasErrors()) {
     foreach ($verifyResponse->errorCodes as $errorCode) {
-      echo 'Turnstile 服务器端验证失败：' . $errorCode . '\n';
+      echo 'Turnstile 服务器端验证失败：' . $errorCode . "\n";
       echo '如果问题依旧存在，你可能需要通过管理邮箱联系我们或者向源代码仓库创建 Issues 以报告此问题。';
       exit;
     }
   } else {
-    echo 'Turnstile 服务器端验证失败，但类型未知。\n';
+    echo 'Turnstile 服务器端验证失败，但类型未知。';
     echo '如果问题依旧存在，你可能需要通过管理邮箱联系我们或者向源代码仓库创建 Issues 以报告此问题。';
     exit;
   }
@@ -34,17 +35,34 @@ if ($verifyResponse->success) {
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
   $username = $_POST['username'];
   $email = $_POST['email'];
+
   // 将用户加入 users 表
   $stmt = $db->prepare("INSERT INTO `users` (`username`, `email`) VALUES (:username, :email)");
   $stmt->bindParam(':username', $username);
   $stmt->bindParam(':email', $email);
   $stmt->execute();
+
+  // 获取最新用户的 ID
+  $stmt = $db->prepare("SELECT id FROM `users` WHERE `username` = ?");
+  $stmt->execute([$username]);
+  $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+  if (!$user) {
+    die('错误：用户信息未找到。请立即通过管理邮箱报告此问题。');
+  }
+
+  // 更新用户开始时间
+  $stmt = $db->prepare("UPDATE users SET start_time = NOW() WHERE `username` = ?");
+  $stmt->execute([$username]);
+
+  // 仅执行一次
+  $stmt->closeCursor();
 }
 
 // 从 users 表中获取用户信息
 $stmt = $db->prepare("SELECT * FROM `users` WHERE `username` = ?");
 $stmt->execute([$username]);
-$user = $stmt->fetch(PDO::FETCH_ASSOC); 
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 // 确保至少有一条记录
 if (!$user) {
@@ -55,11 +73,6 @@ if (!$user) {
 $stmt = $db->prepare("SELECT * FROM questions");
 $stmt->execute();
 $questions = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// 更新用户开始时间
-$stmt = $db->prepare("UPDATE users SET start_time = NOW() WHERE `username` = ?");
-$stmt->execute([$username]);
-$stmt->execute();
 
 // 开始HTML输出
 ?>
