@@ -44,7 +44,11 @@ function calculateScore($answers) {
             $submittedAnswers = [];
             foreach ($answers as $key => $value) {
                 if (strpos($key, "answer_{$question['id']}") === 0) {
-                    $submittedAnswers[] = $value;
+                    if (is_array($value)) { // 处理多选题的数组形式答案
+                        $submittedAnswers = array_merge($submittedAnswers, $value);
+                    } else {
+                        $submittedAnswers[] = $value;
+                    }
                 }
             }
 
