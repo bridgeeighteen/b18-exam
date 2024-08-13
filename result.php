@@ -50,7 +50,11 @@ function calculateScore($answers) {
 
             // Normalize the correct answer to match the expected format
             $correctAnswer = str_replace(['(', ')'], '', strtolower($question['answer']));
-            $submittedAnswerStr = implode(',', array_map('strtolower', $submittedAnswers));
+            
+            // Convert all elements to strings before applying strtolower
+            $submittedAnswerStr = implode(',', array_map(function ($item) {
+                return is_string($item) ? strtolower($item) : strtolower((string)$item);
+            }, $submittedAnswers));
 
             // Check if the question is a single-choice or multiple-choice
             if (stripos($question['answer'], ',') !== false) {
