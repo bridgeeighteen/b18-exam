@@ -12,15 +12,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $score = calculateScore($answers);
 
     // Store results
-    if (is_numeric($score)) {
-        storeResults($userId, $score, $invitationCode);
-    } else {
+    if (!is_numeric($score)) {
         error_log("Score is not numeric: " . print_r($score, true));
         // Handle error, e.g., redirect to an error page
+        exit;
     }
 
     // Generate invitation code
     $invitationCode = generateInvitationCode($score);
+
+    if (!isset($invitationCode) || empty($invitationCode)) {
+        $invitationCode = '空值'; // Provide a default value
+    }
+
+    // Store results
+    storeResults($userId, $score, $invitationCode);
 
     // Record start and end times
     recordTimes($userId);
@@ -70,10 +76,14 @@ function calculateScore($answers) {
             if (stripos($question['answer'], ',') !== false) {
                 // Multiple-choice question
                 $scoreForQuestion = 0;
-                if ($correctAnswer === $submittedAnswerStr) {
-                    $scoreForQuestion = SCORE_CORRECT_QUESTION; // Full score for multiple-choice
-                } elseif (stripos($correctAnswer, $submittedAnswerStr) !== false) {
-                    $scoreForQuestion = SCORE_PARTIAL_MULTIPLE_QUESTION; // Partial score for multiple-choice
+                $correctAnswerParts = explode(',', $correctAnswer);
+                $submittedAnswerParts = explode(',', $submittedAnswerStr);
+
+                // Calculate partial score based on the number of correct answers
+                $numCorrect = count(array_intersect($correctAnswerParts, $submittedAnswerParts));
+
+                if ($numCorrect > 0) {
+                    $scoreForQuestion = SCORE_PARTIAL_MULTIPLE_QUESTION;
                 }
 
                 $totalScore += $scoreForQuestion;
@@ -102,6 +112,9 @@ function storeResults($userId, $score, $invitationCode) {
     // Establish database connection
     $conn = connectToDatabase();
 
+    if ($invitationCode === null) {
+        $invitationCode = '无（API 错误）'; // Provide a default value
+    }
     // Store the result in the database using prepared statement
     $stmt = $conn->prepare("INSERT INTO results (user_id, score, invitation_code) VALUES (?, ?, ?)");
     $stmt->bind_param("iss", $userId, $score, $invitationCode);
