@@ -117,8 +117,8 @@ $stmt->execute();
 </table>
 
 <form id="examForm" action="result.php" method="post">
-  <?php
-  foreach ($questions as $question) {
+<?php
+foreach ($questions as $question) {
     echo '
                     <div class="card mb-3">
                         <div class="card-body">
@@ -144,7 +144,7 @@ $stmt->execute();
       for ($i = 'A'; $i <= 'D'; $i++) {
         echo '
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="answer_' . htmlspecialchars($question['id']) . '_' . htmlspecialchars($i) . '" value="' . htmlspecialchars($i) . '" id="multipleCheck' . htmlspecialchars($question['id']) . '_' . htmlspecialchars($i) . '">
+                                <input class="form-check-input" type="checkbox" name="answer_' . htmlspecialchars($question['id']) . '[]" value="' . htmlspecialchars($i) . '" id="multipleCheck' . htmlspecialchars($question['id']) . '_' . htmlspecialchars($i) . '">
                                 <label class="form-check-label" for="multipleCheck' . htmlspecialchars($question['id']) . '_' . htmlspecialchars($i) . '">
                                     ' . htmlspecialchars($i) . '. ' . htmlspecialchars($question['option_' . strtolower($i)]) . '
                                 </label>
@@ -155,8 +155,8 @@ $stmt->execute();
     echo '
                         </div>
                     </div>';
-  }
-  ?>
+}
+?>
   <button type="submit" class="btn btn-primary">提交</button>
 </form>
 <?php include './views/footer.php'; ?>

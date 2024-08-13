@@ -27,57 +27,56 @@ function calculateScore($answers) {
     $totalQuestions = 0;
     $totalScore = 0; // Initialize total score
 
-    // Establish database connection
-    $conn = connectToDatabase();
+    try {
+        // Establish database connection
+        $conn = connectToDatabase();
 
-    // Retrieve questions and their answers from the database once
-    $stmt = $conn->prepare("SELECT * FROM questions");
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $questions = $result->fetch_all(MYSQLI_ASSOC);
+        // Retrieve questions and their answers from the database once
+        $stmt = $conn->prepare("SELECT * FROM questions");
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $questions = $result->fetch_all(MYSQLI_ASSOC);
 
-    foreach ($questions as $question) {
-        $totalQuestions++;
+        foreach ($questions as $question) {
+            $totalQuestions++;
 
-        // Extract submitted answers for this question
-        $submittedAnswers = [];
-        foreach ($answers as $key => $value) {
-            if (strpos($key, "answer_{$question['id']}") === 0) {
-                $submittedAnswers[] = $value;
+            // Extract submitted answers for this question
+            $submittedAnswers = [];
+            foreach ($answers as $key => $value) {
+                if (strpos($key, "answer_{$question['id']}") === 0) {
+                    $submittedAnswers[] = $value;
+                }
+            }
+
+            // Normalize the correct answer to match the expected format
+            $correctAnswer = str_replace(['(', ')'], '', strtolower($question['answer']));
+            $submittedAnswerStr = implode(',', array_map('strtolower', $submittedAnswers));
+
+            // Check if the question is a single-choice or multiple-choice
+            if (stripos($question['answer'], ',') !== false) {
+                // Multiple-choice question
+                $scoreForQuestion = 0;
+                if ($correctAnswer === $submittedAnswerStr) {
+                    $scoreForQuestion = SCORE_CORRECT_QUESTION; // Full score for multiple-choice
+                } elseif (stripos($correctAnswer, $submittedAnswerStr) !== false) {
+                    $scoreForQuestion = SCORE_PARTIAL_MULTIPLE_QUESTION; // Partial score for multiple-choice
+                }
+
+                $totalScore += $scoreForQuestion;
+            } else {
+                // Single-choice question
+                if (stripos($correctAnswer, $submittedAnswerStr) !== false) {
+                    $totalScore += SCORE_CORRECT_QUESTION; // Full score for single-choice
+                }
             }
         }
 
-        // Normalize the correct answer to match the expected format
-        $correctAnswer = str_replace(['(', ')'], '', $question['answer']);
-
-        // Check if the question is a single-choice or multiple-choice
-        if (stripos($question['answer'], ',') !== false) {
-            // Multiple-choice question
-            $correctAnswersArr = explode(',', $correctAnswer);
-            sort($correctAnswersArr);
-            sort($submittedAnswers);
-
-            // Determine the score for the multiple-choice question
-            $isFullCorrect = (implode(',', $correctAnswersArr) === implode(',', $submittedAnswers));
-            $hasNoIncorrect = !array_diff($submittedAnswers, $correctAnswersArr);
-            $scoreForQuestion = 0;
-            if ($isFullCorrect && $hasNoIncorrect) {
-                $scoreForQuestion = SCORE_CORRECT_QUESTION; // Full score for multiple-choice
-            } elseif ($hasNoIncorrect) {
-                $scoreForQuestion = SCORE_PARTIAL_MULTIPLE_QUESTION; // Partial score for multiple-choice
-            }
-
-            $totalScore += $scoreForQuestion;
-        } else {
-            // Single-choice question
-            if (in_array($correctAnswer, $submittedAnswers)) {
-                $totalScore += SCORE_CORRECT_QUESTION; // Full score for single-choice
-            }
-        }
+        // Close the database connection
+        closeDatabaseConnection($conn);
+    } catch (Exception $e) {
+        // Handle exceptions here
+        error_log("Error in calculateScore: " . $e->getMessage());
     }
-
-    // Close the database connection
-    closeDatabaseConnection($conn);
 
     return $totalScore;
 }
