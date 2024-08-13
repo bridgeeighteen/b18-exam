@@ -22,20 +22,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 }
 
 function calculateScore($answers) {
-    global $db;
-
     $totalQuestions = 0;
     $totalScore = 0; // Initialize total score
 
     try {
         // Establish database connection
-        // Assuming $db is already defined globally
-        // No need to call a separate function as it's already done in the main script
+        $conn = connectToDatabase(); // 调用 connectToDatabase 函数
 
         // Retrieve questions and their answers from the database once
-        $stmt = $db->prepare("SELECT * FROM questions");
+        $stmt = $conn->prepare("SELECT * FROM questions");
         $stmt->execute();
-        $questions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $result = $stmt->get_result();
+        $questions = $result->fetch_all(MYSQLI_ASSOC);
 
         foreach ($questions as $question) {
             $totalQuestions++;
@@ -82,8 +80,9 @@ function calculateScore($answers) {
             }
         }
 
-        // No need to close the database connection since it's managed by PDO
-    } catch (PDOException $e) {
+        // Close the database connection
+        closeDatabaseConnection($conn); // 调用 closeDatabaseConnection 函数
+    } catch (Exception $e) {
         // Handle exceptions here
         error_log("Error in calculateScore: " . $e->getMessage());
     }
