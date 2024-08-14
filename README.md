@@ -2,7 +2,7 @@
 
 <div align="center">
   <a href="https://github.com/favocas/b18-exam">
-    <img src="views/assets/logo_text.svg" alt="十八桥社区" height="80">
+    <img src="views/assets/logo_text.svg" alt="十八桥社区" height="70">
   </a>
 
 <h3 align="center">入站测试系统</h3>
@@ -78,12 +78,12 @@
 * PHP
 * Nginx / Apache
 * 已经部署好的 Flarum
-  * [FoF Doorman 插件](https://github.com/fof/doorman)
-  * [OAuth Center 插件](https://discuss.flarum.org.cn/d/15447)
+  * [FoF Doorman 插件](https://github.com/FriendsOfFlarum/doorman)
+  * [OAuth Center 插件](https://github.com/FoskyM/flarum-oauth-center)
 
 ### 正常安装（生产环境推荐）
 
-1. 在 [Cloudflare 仪表板](https://dash.cloudflare.com/) 获取 Turnstile 的密钥（测试用途不需要），然后去 Flarum 的个人主页获取 API 密钥。同时，你需要在 Flarum 中利用 OAuth Center 插件的管理面板创建一个新的应用。回调地址填 `https://你的部署网站/admin/oauth.php`。
+1. 在 [Cloudflare 仪表板](https://dash.cloudflare.com/)中获取 Turnstile 的密钥（测试用途不需要），然后去 Flarum 的个人主页获取 API 密钥。同时，你需要在 Flarum 中利用 OAuth Center 插件的管理面板创建一个新的应用，先复制（或记下）插件自动生成的 ID 和私钥，然后依需要填写其余内容。回调地址填 `https://你的部署网站/admin/oauth.php`。
 2. 通过 Composer 创建新项目。这里的 `my-new-project` 可以根据实际需要更换。
    ```shell
    composer create-project bridgeeighteen/exam my-new-project
@@ -94,7 +94,7 @@
 
 ### 使用 Git 克隆安装
 
-1. 在 [Cloudflare 仪表板](https://dash.cloudflare.com/) 获取 Turnstile 的密钥（测试用途不需要），然后去 Flarum 的个人主页获取 API 密钥。同时，你需要在 Flarum 中利用 OAuth Center 插件的管理面板创建一个新的应用。回调地址填 `https://你的部署网站/admin/oauth.php`。
+1. 在 [Cloudflare 仪表板](https://dash.cloudflare.com/)中获取 Turnstile 的密钥（测试用途不需要），然后去 Flarum 的个人主页获取 API 密钥。同时，你需要在 Flarum 中利用 OAuth Center 插件的管理面板创建一个新的应用，先复制（或记下）插件自动生成的 ID 和私钥，然后依需要填写其余内容。回调地址填 `https://你的部署网站/admin/oauth.php`。
 2. 克隆本仓库。
    ```shell
    git clone https://github.com/favocas/b18-exam.git
