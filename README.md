@@ -21,8 +21,7 @@
     <img src="https://img.shields.io/github/stars/favocas/b18-exam.svg" alt="Stars 总数">
     <img src="https://img.shields.io/github/issues/favocas/b18-exam.svg" alt="Issues 总数">
     <img src="https://img.shields.io/packagist/v/bridgeeighteen/exam" alt="Composer 版本">
-    <img src="https://img.shields.io/packagist/l/bridgeeighteen/exam
-" alt="许可证">
+    <img src="https://img.shields.io/packagist/l/bridgeeighteen/exam" alt="许可证">
   </p>
 </div>
 
