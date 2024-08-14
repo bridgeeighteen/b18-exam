@@ -18,8 +18,9 @@ define('CODE_TYPE', 'B18R'); // 邀请码类型，出现在其前缀
 define('GROUP_ID', 3); // 邀请码创建用户所属用户组，默认注册用户（3）
 define('MAX_USES', 1); // 邀请码最大使用次数，默认为 1
 define('ACTIVATES', false); // 使用邀请码后是否立即激活，默认否
-define('SCORE_CORRECT_QUESTION', '4'); // 答对每道题目所给的分数，默认为 4（共 25 道题）
-define('SCORE_PARTIAL_MULTIPLE_QUESTION', '2'); // 多选题答对但不全所给的分数，默认为 2
+define('SCORE_THRESHOLD', '60'); // 通过分数阈值，默认为 60 分
+define('SCORE_CORRECT_QUESTION', '4'); // 答对每道题目所给的分数，默认为 4 分（共 25 道题）
+define('SCORE_PARTIAL_MULTIPLE_QUESTION', '2'); // 多选题答对但不全所给的分数，默认为 2 分
 
 // Cloudflare Turnstile
 define('CF_TURNSTILE_SITEKEY', '1x00000000000000000000AA'); // Cloudflare Turnstile 的 Site Key

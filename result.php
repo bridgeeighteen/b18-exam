@@ -224,18 +224,18 @@ function getDoorKey($key) {
     curl_close($ch);
 
     if ($error) {
-        error_log("cURL Error: " . $error);
+        error_log("cURL 错误：" . $error);
         return null;
     }
 
     if ($statusCode !== 201) {
-        error_log("Unexpected HTTP status code: $statusCode");
+        error_log("API 返回异常的 HTTP 状态码：$statusCode");
         return null;
     }
 
     $responseData = json_decode($response, true);
     if (json_last_error() !== JSON_ERROR_NONE) {
-        error_log("Invalid JSON received: " . $response);
+        error_log("收到了未知的 JSON 回应：" . $response);
         return null;
     }
 
@@ -260,7 +260,7 @@ function generateKey() {
 }
 function generateInvitationCode($score) {
     // Set the score threshold
-    $threshold = 60; // Example threshold
+    $threshold = SCORE_THRESHOLD;
 
     // Generate an invitation code only if the score is above the threshold
     if ($score >= $threshold) {
