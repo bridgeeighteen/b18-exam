@@ -1,8 +1,3 @@
-    [![Contributors][contributors-shield]][contributors-url]
-    [![Forks][forks-shield]][forks-url]
-    [![Stargazers][stars-shield]][stars-url]
-    [![Issues][issues-shield]][issues-url]
-    [![License][license-shield]][license-url]
 <div id="top"></div>
 
 <div align="center">
@@ -19,6 +14,14 @@
     <a href="https://github.com/favocas/b18-exam/issues">反馈 Bug</a>
     ·
     <a href="https://github.com/favocas/b18-exam/issues">请求新功能</a>
+    <br />
+    <img src="https://img.shields.io/github/contributors/favocas/b18-exam.svg" alt="贡献者总数">
+    <img src="https://img.shields.io/github/forks/favocas/b18-exam.svg" alt="Forks 总数">
+    <img src="https://img.shields.io/github/stars/favocas/b18-exam.svg" alt="Stars 总数">
+    <img src="https://img.shields.io/github/issues/favocas/b18-exam.svg" alt="Issues 总数">
+    <img src="https://img.shields.io/packagist/v/bridgeeighteen/exam" alt="Composer 版本">
+    <img src="https://img.shields.io/packagist/l/bridgeeighteen/exam
+" alt="许可证">
   </p>
 </div>
 
@@ -79,7 +82,7 @@
 
 ### 正常安装（生产环境推荐）
 
-1. 在 [Cloudflare 仪表板](https://dash.cloudflare.com/) 获取 Turnstile 的密钥（测试用途不需要），然后去 Flarum 的个人主页获取 API 密钥。同时，你需要在 Flarum 中安装 [OAuth Center](https://discuss.flarum.org.cn/d/15447)，利用管理面板创建一个新的应用。回调地址填 `https://你的部署网站/admin/oauth.php`。
+1. 在 [Cloudflare 仪表板](https://dash.cloudflare.com/) 获取 Turnstile 的密钥（测试用途不需要），然后去 Flarum 的个人主页获取 API 密钥。同时，你需要在 Flarum 中利用 OAuth Center 插件的管理面板创建一个新的应用。回调地址填 `https://你的部署网站/admin/oauth.php`。
 2. 通过 Composer 创建新项目。这里的 `my-new-project` 可以根据实际需要更换。
    ```shell
    composer create-project bridgeeighteen/exam my-new-project
@@ -149,17 +152,3 @@
 IRC 频道：[#bridgeeighteen at Libera.Chat](irc://irc.libera.chat/#bridgeeighteen)
 
 <p align="right">(<a href="#top">回到顶部</a>)</p>
-
-
-<!-- MARKDOWN 链接 & 图片 -->
-<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/favocas/b18-exam.svg
-[contributors-url]: https://github.com/favocas/b18-exam/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/favocas/b18-exam.svg
-[forks-url]: https://github.com/favocas/b18-exam/network/members
-[stars-shield]: https://img.shields.io/github/stars/favocas/b18-exam.svg
-[stars-url]: https://github.com/favocas/b18-exam/stargazers
-[issues-shield]: https://img.shields.io/github/issues/favocas/b18-exam.svg
-[issues-url]: https://github.com/favocas/b18-exam/issues
-[license-shield]: https://img.shields.io/github/license/favocas/b18-exam.svg
-[license-url]: https://github.com/favocas/b18-exam/blob/main/LICENSE
