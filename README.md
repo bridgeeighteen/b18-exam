@@ -1,15 +1,5 @@
 <div id="top"></div>
 
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
-
-
-
-<!-- 项目 LOGO -->
-<br />
 <div align="center">
   <a href="https://github.com/favocas/b18-exam">
     <img src="views/assets/logo_text.svg" alt="十八桥社区" height="80">
@@ -24,10 +14,13 @@
     <a href="https://github.com/favocas/b18-exam/issues">反馈 Bug</a>
     ·
     <a href="https://github.com/favocas/b18-exam/issues">请求新功能</a>
+    [![Contributors][contributors-shield]][contributors-url]
+    [![Forks][forks-shield]][forks-url]
+    [![Stargazers][stars-shield]][stars-url]
+    [![Issues][issues-shield]][issues-url]
+    [![MIT License][license-shield]][license-url]
   </p>
 </div>
-
-
 
 <!-- 目录 -->
 <details>
@@ -43,18 +36,16 @@
       <a href="#开始">开始</a>
       <ul>
         <li><a href="#依赖">依赖</a></li>
-        <li><a href="#安装">安装</a></li>
+        <li><a href="#正常安装（生产环境推荐）">正常安装</a></li>
+        <li><a href="#使用Git克隆安装">使用 Git 克隆安装</a></li>
       </ul>
     </li>
-    <li><a href="#使用方法">使用方法</a></li>
     <li><a href="#主要功能">主要功能</a></li>
     <li><a href="#贡献">贡献</a></li>
     <li><a href="#许可证">许可证</a></li>
     <li><a href="#联系我们">联系我们</a></li>
   </ol>
 </details>
-
-
 
 <!-- 关于本项目 -->
 ## 关于本项目
@@ -63,17 +54,13 @@
 
 <p align="right">(<a href="#top">回到顶部</a>)</p>
 
-
-
 ### 构建工具
 
 * [Composer](https://getcomposer.org)
 * [Bootstrap 4](https://getbootstrap.com/docs/4.6/)
-* [JQuery](https://jquery.com)
+* [jQuery](https://jquery.com)
 
 <p align="right">(<a href="#top">回到顶部</a>)</p>
-
-
 
 <!-- 开始 -->
 ## 开始
@@ -86,32 +73,50 @@
 * MySQL
 * PHP
 * Nginx / Apache
+* 已经部署好的 Flarum
+  * [FoF Doorman 插件](https://github.com/fof/doorman)
+  * [OAuth Center 插件](https://discuss.flarum.org.cn/d/15447)
 
-### 安装
+### 正常安装（生产环境推荐）
 
-1. 在 [Cloudflare 仪表板](https://dash.cloudflare.com/) 获取 Turnstile 的密钥，然后去 Flarum 的个人主页获取 API 密钥。同时，你需要在 Flarum 中安装 [OAuth Center](https://discuss.flarum.org.cn/d/15447)，利用管理面板创建一个新的应用。回调地址填 `https://你的部署网站/admin/oauth.php`。
+1. 在 [Cloudflare 仪表板](https://dash.cloudflare.com/) 获取 Turnstile 的密钥（测试用途不需要），然后去 Flarum 的个人主页获取 API 密钥。同时，你需要在 Flarum 中安装 [OAuth Center](https://discuss.flarum.org.cn/d/15447)，利用管理面板创建一个新的应用。回调地址填 `https://你的部署网站/admin/oauth.php`。
+2. 通过 Composer 创建新项目。
+   ```shell
+   composer create-project bridgeeighteen/exam my-new-project
+   ```
+这里的 `my-new-project` 可以根据实际需要更换。
+3. 在 `config-example.php` 中根据注释提示完成配置。如果只是用于测试，须保留模板中给定的 Turnstile 密钥。
+4. 使用 phpMyAdmin 等导入 `table.sql` 中定义的数据表及结构。
+5. 在 `questions` 表中手工录入试题。在后续版本中，可以通过管理面板导入 Word 试题，由系统自动识别并录入。
+
+### 使用 Git 克隆安装
+
+1. 在 [Cloudflare 仪表板](https://dash.cloudflare.com/) 获取 Turnstile 的密钥（测试用途不需要），然后去 Flarum 的个人主页获取 API 密钥。同时，你需要在 Flarum 中利用 OAuth Center 插件的管理面板创建一个新的应用。回调地址填 `https://你的部署网站/admin/oauth.php`。
 2. 克隆本仓库。
-   ```sh
+   ```shell
    git clone https://github.com/favocas/b18-exam.git
    ```
 3. 安装 Composer 依赖包。
-   ```sh
-   composer update
+   ```shell
+   composer install
    ```
-4. 在 `config-example.php` 中根据注释提示完成配置。
+4. 在 `config-example.php` 中根据注释提示完成配置。如果只是用于测试，须保留模板中给定的 Turnstile 密钥。
+5. 使用 phpMyAdmin 等导入 `table.sql` 中定义的数据表及结构。
+6. 在 `questions` 表中手工录入试题。在后续版本中，可以通过管理面板导入 Word 试题，由系统自动识别并录入。
 
 <p align="right">(<a href="#top">回到顶部</a>)</p>
 
 
-<!-- 路线图 -->
-## 路线图
+<!-- 主要功能 -->
+## 主要功能
 
-- [ ] 功能 1
-- [ ] 功能 2
-- [ ] 功能 3
-    - [ ] 嵌套功能
+- [x] 支持单选/多选试题
+- [x] 时间作弊检测
+- [x] 自定义通过分数阈值、每题全对分数和多选题漏选分数
+- [x] 完美支持 Flarum API 接口
+- [ ] 识别 Word 并自动录入试题
 
-到 [open issues](https://github.com/favocas/b18-exam/issues) 页查看所有请求的功能 （以及已知的问题）。
+你也可以到 [Open Issues](https://github.com/favocas/b18-exam/issues) 页查看所有请求的功能（以及已知的问题）。
 
 <p align="right">(<a href="#top">回到顶部</a>)</p>
 
@@ -132,16 +137,12 @@
 
 <p align="right">(<a href="#top">回到顶部</a>)</p>
 
-
-
 <!-- 许可证 -->
 ## 许可证
 
 根据 LGPL-3.0+ 许可证分发。GPL-3.0 和 LGPL-3.0 的完整副本请见 [LICENSE](LICENSE)。
 
 <p align="right">(<a href="#top">回到顶部</a>)</p>
-
-
 
 <!-- 联系我们 -->
 ## 联系我们
@@ -153,20 +154,15 @@ IRC 频道：[#bridgeeighteen at Libera.Chat](irc://irc.libera.chat/#bridgeeight
 <p align="right">(<a href="#top">回到顶部</a>)</p>
 
 
-
-
 <!-- MARKDOWN 链接 & 图片 -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/favocas/b18-exam.svg?style=for-the-badge
+[contributors-shield]: https://img.shields.io/github/contributors/favocas/b18-exam.svg
 [contributors-url]: https://github.com/favocas/b18-exam/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/favocas/b18-exam.svg?style=for-the-badge
+[forks-shield]: https://img.shields.io/github/forks/favocas/b18-exam.svg
 [forks-url]: https://github.com/favocas/b18-exam/network/members
-[stars-shield]: https://img.shields.io/github/stars/favocas/b18-exam.svg?style=for-the-badge
+[stars-shield]: https://img.shields.io/github/stars/favocas/b18-exam.svg
 [stars-url]: https://github.com/favocas/b18-exam/stargazers
-[issues-shield]: https://img.shields.io/github/issues/favocas/b18-exam.svg?style=for-the-badge
+[issues-shield]: https://img.shields.io/github/issues/favocas/b18-exam.svg
 [issues-url]: https://github.com/favocas/b18-exam/issues
-[license-shield]: https://img.shields.io/github/license/favocas/b18-exam.svg?style=for-the-badge
+[license-shield]: https://img.shields.io/github/license/favocas/b18-exam.svg
 [license-url]: https://github.com/favocas/b18-exam/blob/main/LICENSE
-[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://linkedin.com/in/linkedin_username
-[product-screenshot]: images/screenshot.png
