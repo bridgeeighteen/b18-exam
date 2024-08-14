@@ -81,9 +81,13 @@ function calculateScore($answers) {
 
                 // Calculate partial score based on the number of correct answers
                 $numCorrect = count(array_intersect($correctAnswerParts, $submittedAnswerParts));
+                $numIncorrect = count(array_diff($submittedAnswerParts, $correctAnswerParts));
 
-                if ($numCorrect > 0) {
-                    $scoreForQuestion = SCORE_PARTIAL_MULTIPLE_QUESTION;
+                // Check if the submitted answers include any incorrect choices
+                if ($numIncorrect > 0) {
+                    $scoreForQuestion = 0; // Score is 0 if any incorrect answer is chosen
+                } elseif ($numCorrect > 0) {
+                    $scoreForQuestion = SCORE_PARTIAL_MULTIPLE_QUESTION; // Partial score if some correct answers are chosen
                 }
 
                 $totalScore += $scoreForQuestion;
