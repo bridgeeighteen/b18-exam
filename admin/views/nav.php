@@ -1,7 +1,7 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class="container">
-            <a class="navbar-brand" href="index.php">
+            <a class="navbar-brand" href="../index.php">
                 <img src="../views/assets/logo_text.svg" height="25" class="d-inline-block align-text-bottom"
                     alt="十八桥社区">
                 入站测试系统（公测）

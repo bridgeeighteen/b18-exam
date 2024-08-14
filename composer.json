@@ -1,8 +1,8 @@
 {
     "name": "bridgeeighteen/exam",
     "description": "A simple entrance exam system for Bridge Eighteen.",
+    "type": "project",
     "license": "LGPL-3.0+",
-    "version": "1.0.0-beta",
     "authors": [
         {
             "name": "Diamochang (Mike Wang)",
