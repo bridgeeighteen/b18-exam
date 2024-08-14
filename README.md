@@ -1,9 +1,9 @@
-<div id="top"></div>
     [![Contributors][contributors-shield]][contributors-url]
     [![Forks][forks-shield]][forks-url]
     [![Stargazers][stars-shield]][stars-url]
     [![Issues][issues-shield]][issues-url]
-    [![MIT License][license-shield]][license-url]
+    [![License][license-shield]][license-url]
+<div id="top"></div>
 
 <div align="center">
   <a href="https://github.com/favocas/b18-exam">
