@@ -1,4 +1,9 @@
 <div id="top"></div>
+    [![Contributors][contributors-shield]][contributors-url]
+    [![Forks][forks-shield]][forks-url]
+    [![Stargazers][stars-shield]][stars-url]
+    [![Issues][issues-shield]][issues-url]
+    [![MIT License][license-shield]][license-url]
 
 <div align="center">
   <a href="https://github.com/favocas/b18-exam">
@@ -14,11 +19,6 @@
     <a href="https://github.com/favocas/b18-exam/issues">反馈 Bug</a>
     ·
     <a href="https://github.com/favocas/b18-exam/issues">请求新功能</a>
-    [![Contributors][contributors-shield]][contributors-url]
-    [![Forks][forks-shield]][forks-url]
-    [![Stargazers][stars-shield]][stars-url]
-    [![Issues][issues-shield]][issues-url]
-    [![MIT License][license-shield]][license-url]
   </p>
 </div>
 
@@ -80,11 +80,10 @@
 ### 正常安装（生产环境推荐）
 
 1. 在 [Cloudflare 仪表板](https://dash.cloudflare.com/) 获取 Turnstile 的密钥（测试用途不需要），然后去 Flarum 的个人主页获取 API 密钥。同时，你需要在 Flarum 中安装 [OAuth Center](https://discuss.flarum.org.cn/d/15447)，利用管理面板创建一个新的应用。回调地址填 `https://你的部署网站/admin/oauth.php`。
-2. 通过 Composer 创建新项目。
+2. 通过 Composer 创建新项目。这里的 `my-new-project` 可以根据实际需要更换。
    ```shell
    composer create-project bridgeeighteen/exam my-new-project
    ```
-这里的 `my-new-project` 可以根据实际需要更换。
 3. 在 `config-example.php` 中根据注释提示完成配置。如果只是用于测试，须保留模板中给定的 Turnstile 密钥。
 4. 使用 phpMyAdmin 等导入 `table.sql` 中定义的数据表及结构。
 5. 在 `questions` 表中手工录入试题。在后续版本中，可以通过管理面板导入 Word 试题，由系统自动识别并录入。
@@ -120,14 +119,12 @@
 
 <p align="right">(<a href="#top">回到顶部</a>)</p>
 
-
-
 <!-- 贡献 -->
 ## 贡献
 
 贡献让开源社区成为了一个非常适合学习、互相激励和创新的地方。你所做出的任何贡献都是**受人尊敬**的。
 
-如果你有好的建议，请复刻（fork）本仓库并且创建一个拉取请求（pull request）。你也可以简单地创建一个议题（issue），并且添加标签「enhancement」。不要忘记给项目点一个 star！再次感谢！
+如果你有好的建议，请复刻（Fork）本仓库并且创建一个拉取请求（Pull Request）。你也可以简单地创建一个议题（Issue），并且添加标签「enhancement」。不要忘记给项目点一个 Star！再次感谢！
 
 1. 复刻（Fork）本项目
 2. 创建你的 Feature 分支 (`git checkout -b feature/AmazingFeature`)
