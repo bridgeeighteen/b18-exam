@@ -13,7 +13,15 @@ include 'config.php';
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"></script>
 </head>
 
-<?php include './views/nav.php'; ?>
+<?php 
+include './views/nav.php'; 
+if (CLOSED) {
+  echo '<div class="alert alert-warning" role="alert">测试通道已关闭。更多详情请查看社区网站和联邦宇宙官宣账号。</div>';
+  include './views/footer.php';
+  exit;
+} else {
+}
+?>
                 <h2>信息登记</h2>
                 <h5>在正式开始测试前，请填写这些基本信息以便我们核查邀请码使用情况。请记住，将邀请码转让给他人是绝对禁止的，这会导致账号被封禁。</h5>
                 <form action="exam.php" method="post">
