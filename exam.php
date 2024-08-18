@@ -5,6 +5,9 @@ require_once './vendor/autoload.php';
 
 use FluxSoft\Turnstile\Turnstile;
 
+if (CLOSED) {
+} else {
+
 $secretKey = CF_TURNSTILE_SECRET;
 $turnstile = new Turnstile($secretKey);
 $verifyResponse = $turnstile->verify($_POST['cf-turnstile-response'], $_SERVER['REMOTE_ADDR']);
@@ -36,32 +39,42 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   $username = $_POST['username'];
   $email = $_POST['email'];
 
-  // 将用户加入 users 表
-  $stmt = $db->prepare("INSERT INTO `users` (`username`, `email`) VALUES (:username, :email)");
-  $stmt->bindParam(':username', $username);
-  $stmt->bindParam(':email', $email);
-  $stmt->execute();
+  // 检查电子邮件是否已存在于 users 表中
+  $stmt = $db->prepare("SELECT id FROM `users` WHERE `email` = ?");
+  $stmt->execute([$email]);
+  $existingUser = $stmt->fetch(PDO::FETCH_ASSOC);
 
-  // 获取最新用户的 ID
-  $stmt = $db->prepare("SELECT id FROM `users` WHERE `username` = ?");
-  $stmt->execute([$username]);
-  $user = $stmt->fetch(PDO::FETCH_ASSOC);
+  if ($existingUser) {
+    // 如果电子邮件已存在，则使用现有用户的 ID
+    $userId = $existingUser['id'];
+  } else {
+    // 如果电子邮件不存在，则将用户加入 users 表
+    $stmt = $db->prepare("INSERT INTO `users` (`username`, `email`) VALUES (?, ?)");
+    $stmt->execute([$username, $email]);
 
-  if (!$user) {
-    die('错误：用户信息未找到。请立即通过管理邮箱报告此问题。');
+    // 获取最新用户的 ID
+    $stmt = $db->prepare("SELECT id FROM `users` WHERE `email` = ?");
+    $stmt->execute([$email]);
+    $newUser = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if (!$newUser) {
+      die('错误：用户信息未找到。请立即通过管理邮箱报告此问题。');
+    }
+
+    $userId = $newUser['id'];
   }
 
   // 更新用户开始时间
-  $stmt = $db->prepare("UPDATE users SET start_time = NOW() WHERE `username` = ?");
-  $stmt->execute([$username]);
+  $stmt = $db->prepare("UPDATE `users` SET `start_time` = NOW() WHERE `id` = ?");
+  $stmt->execute([$userId]);
 
   // 仅执行一次
   $stmt->closeCursor();
 }
 
 // 从 users 表中获取用户信息
-$stmt = $db->prepare("SELECT * FROM `users` WHERE `username` = ?");
-$stmt->execute([$username]);
+$stmt = $db->prepare("SELECT * FROM `users` WHERE `id` = ?");
+$stmt->execute([$userId]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 // 确保至少有一条记录
@@ -75,6 +88,7 @@ $stmt->execute();
 $questions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // 开始HTML输出
+}
 ?>
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -110,7 +124,15 @@ $questions = $stmt->fetchAll(PDO::FETCH_ASSOC);
   </script>
 </head>
 
-<?php include './views/nav.php'; ?>
+<?php 
+include './views/nav.php'; 
+if (CLOSED) {
+  echo '<div class="alert alert-warning" role="alert">测试通道已关闭。更多详情请查看社区网站和联邦宇宙官宣账号。</div>';
+  include './views/footer.php';
+  exit;
+} else {
+}
+?>
 <h2>答卷 <span class="badge badge-secondary" id="timer"></span></h2>
 <table class="table table-bordered">
   <thead>
