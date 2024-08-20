@@ -54,7 +54,7 @@ if (CLOSED) {
                         });
                       } else {
                         document.getElementById('turnstile-error').style.display = 'block';
-                        console.error('Turnstile JavaScript 脚本未加载。');
+                        console.error('Turnstile 未定义。');
                       }
                     </script>
                  </form>

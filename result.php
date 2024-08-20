@@ -22,7 +22,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $invitationCode = generateInvitationCode($score);
 
     if (!isset($invitationCode) || empty($invitationCode)) {
-        $invitationCode = '空值'; // Provide a default value
+        $invitationCode = '错误：空值'; // Provide a default value
     }
 
     // Store results
@@ -117,7 +117,7 @@ function storeResults($userId, $score, $invitationCode) {
     $conn = connectToDatabase();
 
     if ($invitationCode === null) {
-        $invitationCode = '无（API 错误）'; // Provide a default value
+        $invitationCode = '无（错误）'; // Provide a default value
     }
     // Store the result in the database using prepared statement
     $stmt = $conn->prepare("INSERT INTO results (user_id, score, invitation_code) VALUES (?, ?, ?)");
@@ -131,6 +131,14 @@ function storeResults($userId, $score, $invitationCode) {
 function recordTimes($userId) {
     // Establish database connection
     $conn = connectToDatabase();
+
+    // Check if the user_id already exists in the results table
+    $stmt = $conn->prepare("SELECT COUNT(*) AS count FROM results WHERE user_id = ?");
+    $stmt->bind_param("i", $userId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    $exists = $row['count'] > 0;
 
     // Get the start time from the users table
     $stmt = $conn->prepare("SELECT start_time FROM users WHERE id = ?");
@@ -160,10 +168,17 @@ function recordTimes($userId) {
         $stmt->bind_param("i", $userId);
         $stmt->execute();
     } else {
-        // Update the end time in the results table
-        $stmt = $conn->prepare("UPDATE results SET end_time = ? WHERE user_id = ?");
-        $stmt->bind_param("si", $currentServerTime, $userId);
-        $stmt->execute();
+        if ($exists) {
+            // Update the end time for existing user
+            $stmt = $conn->prepare("UPDATE results SET end_time = NOW() WHERE user_id = ?");
+            $stmt->bind_param("i", $userId);
+            $stmt->execute();
+        } else {
+            // Insert a new record for new user
+            $stmt = $conn->prepare("INSERT INTO results (user_id, end_time) VALUES (?, NOW())");
+            $stmt->bind_param("i", $userId);
+            $stmt->execute();
+        }
     }
 
     // Close the database connection
@@ -297,9 +312,7 @@ function generateInvitationCode($score) {
                     </div>
                     <div class="card-body">
                         <?php if (isset($timeCheatDetected) && $timeCheatDetected): ?>
-                            <div class="alert alert-danger" role="alert">
-                                作弊检测：你违反了测试的时间限制。你的信息已被删除，请重新开始测试。
-                            </div>
+                            <div class="alert alert-danger" role="alert">作弊检测：你违反了测试的时间限制。你的信息已被删除，请重新开始测试。</div>
                             <h5 class="card-title">测试失败。</h5>
                             <p class="card-subtitle">系统检测到你在测试过程中有作弊行为。</p>
                             <p class="card-text">如果对此结果有任何问题，请截屏此页面然后向<a
