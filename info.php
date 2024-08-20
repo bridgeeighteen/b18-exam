@@ -22,6 +22,7 @@ if (CLOSED) {
 } else {
 }
 ?>
+                <div class="alert alert-danger" role="alert" id="turnstile-error" style="display:none;">Cloudflare Turnstile 的 JavaScript 脚本似乎未正确加载。建议刷新页面重新填写。</div>
                 <h2>信息登记</h2>
                 <h5>在正式开始测试前，请填写这些基本信息以便我们核查邀请码使用情况。请记住，将邀请码转让给他人是绝对禁止的，这会导致账号被封禁。</h5>
                 <form action="exam.php" method="post">
@@ -39,9 +40,10 @@ if (CLOSED) {
                       <input type="checkbox" class="form-check-input" id="ruleCheck" required>
                       <label class="form-check-label" for="ruleCheck">我已阅读<a href="https://www.bridge18.rr.nu/p/3-code-of-user-conduct">用户行为准则</a>，并确认完全理解其内容。</label>
                     </div>
-                    <div id="turnstile"></div>
+                    <div class="form-group" id="turnstile"></div>
                     <button type="submit" class="btn btn-primary">开始测试</button>
                     <script>
+                      if (typeof turnstile !== 'undefined') {
                         turnstile.ready(function () {
                             turnstile.render('#turnstile', {
                                 sitekey: <?php echo "'" . htmlspecialchars(CF_TURNSTILE_SITEKEY) . "'" ?>,
@@ -50,6 +52,10 @@ if (CLOSED) {
                                     },
                             });
                         });
+                      } else {
+                        document.getElementById('turnstile-error').style.display = 'block';
+                        console.error('Turnstile JavaScript 脚本未加载。');
+                      }
                     </script>
                  </form>
 <?php include './views/footer.php'; ?>

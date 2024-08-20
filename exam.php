@@ -8,6 +8,15 @@ use FluxSoft\Turnstile\Turnstile;
 if (CLOSED) {
 } else {
 
+$turnstileResponse = $_POST['cf-turnstile-response'];
+
+if (empty($turnstileResponse)) {
+    echo "入站考试系统使用 Cloudflare Turnstile 验证码，而你提交的信息表单中缺少用于服务器端验证的值。";
+    echo "这表明你在填写基本信息时 Turnstile 验证框未正常加载，或者浏览器因不支持 JavaScript 或版本太过老旧而不支持 Turnstile。";
+    echo "为了更好的体验，请尝试重新填写基本信息，或者更换浏览器。";
+    exit;
+}
+
 $secretKey = CF_TURNSTILE_SECRET;
 $turnstile = new Turnstile($secretKey);
 $verifyResponse = $turnstile->verify($_POST['cf-turnstile-response'], $_SERVER['REMOTE_ADDR']);
@@ -24,7 +33,7 @@ if ($verifyResponse->success) {
 } else {
   if ($verifyResponse->hasErrors()) {
     foreach ($verifyResponse->errorCodes as $errorCode) {
-      echo 'Turnstile 服务器端验证失败：' . $errorCode . "\n";
+      echo 'Turnstile 服务器端验证失败：' . $errorCode;
       echo '如果问题依旧存在，你可能需要通过管理邮箱联系我们或者向源代码仓库创建 Issues 以报告此问题。';
       exit;
     }
