@@ -14,10 +14,10 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav mr-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="https://www.bridge18.rr.nu/d/1">关于</a>
+                        <a class="nav-link" href="https://www.bridge18.us.kg/d/1">关于</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="https://github.com/favocas/b18-exam">源代码</a>
+                        <a class="nav-link" href="https://github.com/bridgeeighteen/b18-exam">源代码</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/admin/">管理</a>
