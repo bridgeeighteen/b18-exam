@@ -4,7 +4,7 @@
             <a class="navbar-brand" href="index.php">
                 <img src="./views/assets/logo_text.svg" height="25" class="d-inline-block align-text-bottom"
                     alt="十八桥社区">
-                入站测试系统（公测）
+                论坛入站测试系统（公测）
             </a>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,4 +31,7 @@
             <div class="col">
                 <div class="alert alert-primary" role="alert">
                     本系统处于公测阶段，如有任何 Bug，请通过源代码仓库创建 Issue 向我们反馈，感谢支持。
+                </div>
+                <div class="alert alert-primary" role="alert">
+                    十八桥社区论坛已改用 DigitalPlat 域名“bridge18.us.kg”，本系统不久也会迁入该域名。<a href="https://www.bridge18.us.kg/d/72">点击这里了解详情。</a>
                 </div>

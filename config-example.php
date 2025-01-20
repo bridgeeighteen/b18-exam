@@ -10,7 +10,7 @@ define('DB_USER', 'USERNAME'); // 数据库用户名
 define('DB_PASS', 'PASSWORD'); // 数据库密码
 
 // API 配置
-define('API_SITE', 'www.bridge18.rr.nu'); // Flarum 站点域名
+define('API_SITE', 'www.bridge18.us.kg'); // Flarum 站点域名
 define('API_X_CSRF_TOKEN', 'YOUR_API_X_CSRF_TOKEN'); // Flarum API 的令牌，直接从个人设置 -> 安全页面创建并获取
 
 // 其他配置

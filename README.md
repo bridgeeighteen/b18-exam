@@ -1,8 +1,8 @@
 <div id="top"></div>
 
 <div align="center">
-  <a href="https://github.com/favocas/b18-exam">
-    <img src="views/assets/logo_text.svg" alt="十八桥社区" height="70">
+  <a href="https://github.com/bridgeeighteen/b18-exam">
+    <img src="views/assets/logo_text.svg" alt="十八桥社区" height="60">
   </a>
 
 <h3 align="center">入站测试系统</h3>
@@ -11,15 +11,15 @@
     十八桥社区使用的入站测试系统，基于 Bootstrap 和 PHP。
     <br />
     <br />
-    <a href="https://github.com/favocas/b18-exam/issues">反馈 Bug</a>
+    <a href="https://github.com/bridgeeighteen/b18-exam/issues">反馈 Bug</a>
     ·
-    <a href="https://github.com/favocas/b18-exam/issues">请求新功能</a>
+    <a href="https://github.com/bridgeeighteen/b18-exam/issues">请求新功能</a>
     <br />
     <br />
-    <img src="https://img.shields.io/github/contributors/favocas/b18-exam.svg" alt="贡献者总数">
-    <img src="https://img.shields.io/github/forks/favocas/b18-exam.svg" alt="Forks 总数">
-    <img src="https://img.shields.io/github/stars/favocas/b18-exam.svg" alt="Stars 总数">
-    <img src="https://img.shields.io/github/issues/favocas/b18-exam.svg" alt="Issues 总数">
+    <img src="https://img.shields.io/github/contributors/bridgeeighteen/b18-exam.svg" alt="贡献者总数">
+    <img src="https://img.shields.io/github/forks/bridgeeighteen/b18-exam.svg" alt="Forks 总数">
+    <img src="https://img.shields.io/github/stars/bridgeeighteen/b18-exam.svg" alt="Stars 总数">
+    <img src="https://img.shields.io/github/issues/bridgeeighteen/b18-exam.svg" alt="Issues 总数">
     <img src="https://img.shields.io/packagist/v/bridgeeighteen/exam" alt="Composer 版本">
     <img src="https://img.shields.io/packagist/l/bridgeeighteen/exam" alt="许可证">
   </p>
@@ -83,28 +83,40 @@
 ### 正常安装（生产环境推荐）
 
 1. 在 [Cloudflare 仪表板](https://dash.cloudflare.com/)中获取 Turnstile 的密钥（测试用途不需要），然后去 Flarum 的个人主页获取 API 密钥。同时，你需要在 Flarum 中利用 OAuth Center 插件的管理面板创建一个新的应用，先复制（或记下）插件自动生成的 ID 和私钥，然后依需要填写其余内容。回调地址填 `https://你的部署网站/admin/oauth.php`。
+
 2. 通过 Composer 创建新项目。这里的 `my-new-project` 可以根据实际需要更换。
+
    ```shell
    composer create-project bridgeeighteen/exam my-new-project
    ```
+
 3. 在 `config-example.php` 中根据注释提示完成配置。如果只是用于测试，须保留模板中给定的 Turnstile 密钥。
+
 4. 使用 phpMyAdmin 等导入 `table.sql` 中定义的数据表及结构。
+
 5. 在 `questions` 表中手工录入试题。在后续版本中，可以通过管理面板导入 Word 试题，由系统自动识别并录入。
 
 ### 使用 Git 克隆安装
 
 1. 在 [Cloudflare 仪表板](https://dash.cloudflare.com/)中获取 Turnstile 的密钥（测试用途不需要），然后去 Flarum 的个人主页获取 API 密钥。同时，你需要在 Flarum 中利用 OAuth Center 插件的管理面板创建一个新的应用，先复制（或记下）插件自动生成的 ID 和私钥，然后依需要填写其余内容。回调地址填 `https://你的部署网站/admin/oauth.php`。
+
 2. 克隆本仓库。
+
    ```shell
-   git clone https://github.com/favocas/b18-exam.git
+   git clone https://github.com/bridgeeighteen/b18-exam.git
    ```
+
 3. 安装 Composer 依赖包。
+
    ```shell
    composer install
    ```
+
 4. 在 `config-example.php` 中根据注释提示完成配置。如果只是用于测试，须保留模板中给定的 Turnstile 密钥。
+
 5. 使用 phpMyAdmin 等导入 `table.sql` 中定义的数据表及结构。
-6. 在 `questions` 表中手工录入试题。在后续版本中，可以通过管理面板导入 Word 试题，由系统自动识别并录入。
+
+6. 在 `questions` 表中手工录入试题。在后续版本中，可以通过管理面板导入 Markdown 试题，由系统自动识别并录入。
 
 <p align="right">(<a href="#top">回到顶部</a>)</p>
 
@@ -113,12 +125,13 @@
 ## 主要功能
 
 - [x] 支持单选/多选试题
+- [x] 支持多分区试题设置
 - [x] 时间作弊检测
-- [x] 自定义通过分数阈值、每题全对分数和多选题漏选分数
-- [x] 完美支持 Flarum API 接口
-- [ ] 识别 Word 并自动录入试题
+- [x] 自定义过关分数阈值、每题全对分数和多选题漏选分数
+- [x] 完美支持 Flarum 内置 API 接口和 FoF Doorman 插件自带 API 接口
+- [ ] 识别 Markdown 并自动录入试题
 
-你也可以到 [Open Issues](https://github.com/favocas/b18-exam/issues) 页查看所有请求的功能（以及已知的问题）。
+你也可以到 [Open Issues](https://github.com/bridgeeighteen/b18-exam/issues) 页查看所有请求的功能（以及已知的问题）。
 
 <p align="right">(<a href="#top">回到顶部</a>)</p>
 
@@ -149,6 +162,6 @@
 
 管理团队邮箱：admin@bridge18.rr.nu
 
-IRC 频道：[#bridgeeighteen at Libera.Chat](irc://irc.libera.chat/#bridgeeighteen)
+IRC 频道：irc://irc.libera.chat/#bridgeeighteen
 
 <p align="right">(<a href="#top">回到顶部</a>)</p>

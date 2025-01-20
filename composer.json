@@ -1,6 +1,6 @@
 {
     "name": "bridgeeighteen/exam",
-    "description": "A simple entrance exam system for Bridge Eighteen.",
+    "description": "A simple entrance exam system for the Bridge Eighteen Community Forum.",
     "type": "project",
     "license": "LGPL-3.0+",
     "authors": [
@@ -15,6 +15,6 @@
         "twbs/bootstrap": "4.6.2",
         "components/jquery": "3.5.1",
         "fluxsoft/php-turnstile": "^0.1.3",
-        "phpoffice/phpword": "^1.2"
+        "erusev/parsedown": "^1.7"
     }
 }
