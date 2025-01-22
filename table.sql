@@ -21,7 +21,7 @@ SET time_zone = "+08:00";
 
 CREATE TABLE `questions` (
   `id` int NOT NULL,
-  `category` enum('IT','ACGN','VOCOLOID','Broadcasting','Etiquette') NOT NULL，
+  `category` enum('IT','ACGN','VOCOLOID','Broadcasting','Etiquette') NOT NULL,
   `question_text` text NOT NULL,
   `option_a` varchar(255) NOT NULL,
   `option_b` varchar(255) NOT NULL,
@@ -29,7 +29,7 @@ CREATE TABLE `questions` (
   `option_d` varchar(255) NOT NULL,
   `answer` varchar(255) NOT NULL,
   `type` enum('single','multiple') NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
@@ -43,7 +43,7 @@ CREATE TABLE `results` (
   `score` int NOT NULL,
   `end_time` timestamp NOT NULL,
   `invitation_code` varchar(255) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
@@ -57,7 +57,7 @@ CREATE TABLE `users` (
   `email` varchar(255) NOT NULL,
   `selected_categories` varchar(255) DEFAULT NULL,
   `start_time` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- 转储表的索引
@@ -90,19 +90,19 @@ ALTER TABLE `users`
 -- 使用表AUTO_INCREMENT `questions`
 --
 ALTER TABLE `questions`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT = 1;
 
 --
 -- 使用表AUTO_INCREMENT `results`
 --
 ALTER TABLE `results`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT = 1;
 
 --
 -- 使用表AUTO_INCREMENT `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT = 1;
 
 --
 -- 限制导出的表
@@ -112,7 +112,7 @@ ALTER TABLE `users`
 -- 限制表 `results`
 --
 ALTER TABLE `results`
-  ADD CONSTRAINT `results_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
+  ADD CONSTRAINT `results_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
