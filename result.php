@@ -215,7 +215,7 @@ function getDoorKey($key) {
     $headers = [
         'Content-Type: application/json; charset=UTF-8',
         'Authorization: Token ' . API_X_CSRF_TOKEN,
-        'User-Agent: b18-exam/' . VERSION . ' b18-codegen-php/1.0.0',
+        'User-Agent: b18-exam/' . VERSION . ' b18-codeget-php/1.0.0',
     ];
 
     $payload = [
@@ -301,7 +301,7 @@ function generateInvitationCode($score) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>结果 - 十八桥社区入站测试系统</title>
+    <title>结果 - 十八桥社区论坛入站测试系统</title>
     <link rel="stylesheet" href="./vendor/twbs/bootstrap/dist/css/bootstrap.min.css">
 </head>
 
@@ -322,8 +322,8 @@ function generateInvitationCode($score) {
                             <p class="card-subtitle">你的分数是：<strong><?php echo htmlspecialchars($score); ?></strong></p>
                             <p class="card-subtitle">你的邀请码是：<strong><?php echo htmlspecialchars(is_string($invitationCode) ? $invitationCode : '错误：返回内容的类型不是字符串。这有可能是邀请码 API 出现了错误，请截屏并联系管理邮箱获取邀请码。', ENT_QUOTES, 'UTF-8'); ?></strong></p>
                             <p class="card-text">如果对此结果有任何问题，请截屏此页面然后向<a
-                                    href="mailto:admin@bridge18.rr.nu">管理邮箱</a>发送电子邮件（用户 ID：<strong><?php echo htmlspecialchars(isset($userId) ? $userId : '', ENT_QUOTES, 'UTF-8'); ?></strong>）。</p>
-                            <a href="https://www.bridge18.rr.nu/" class="btn btn-primary" data-toggle="tooltip"
+                                    href="mailto:admin@bridge18.rr.nu">管理邮箱</a>发送电子邮件（被测试者 ID：<strong><?php echo htmlspecialchars(isset($userId) ? $userId : '', ENT_QUOTES, 'UTF-8'); ?></strong>）。</p>
+                            <a href="https://www.bridge18.us.kg/" class="btn btn-primary" data-toggle="tooltip"
                                 data-placement="top" title="不要忘记写下（或安全地保存）邀请码，它只会出现一次！">去注册</a>
                         <?php endif; ?>
                     </div>

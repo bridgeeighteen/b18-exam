@@ -21,6 +21,7 @@ SET time_zone = "+08:00";
 
 CREATE TABLE `questions` (
   `id` int NOT NULL,
+  `category` enum('IT','ACGN','VOCOLOID','Broadcasting','Etiquette') NOT NULL，
   `question_text` text NOT NULL,
   `option_a` varchar(255) NOT NULL,
   `option_b` varchar(255) NOT NULL,
@@ -54,6 +55,7 @@ CREATE TABLE `users` (
   `id` int NOT NULL,
   `username` varchar(255) NOT NULL,
   `email` varchar(255) NOT NULL,
+  `selected_categories` varchar(255) DEFAULT NULL,
   `start_time` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
