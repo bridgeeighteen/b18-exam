@@ -33,9 +33,10 @@
                     本系统处于公测阶段，如有任何 Bug，请通过源代码仓库创建 Issue 向我们反馈，感谢支持。
                 </div>
 <?php
-if ($_SERVER["REQUEST_METHOD"] == "GET" && $_GET["old_domain"] == "1") {
+if (isset($_GET["old_domain"]) && $_GET["old_domain"] == "1") {
     echo '                <div class="alert alert-primary" role="alert">"';
-    echo '                    欢迎来到新的入站测试系统！我们很高兴地告诉你，你现在可以自选试题的考查方向，这或许会使你获得邀请码更容易。更多信息，';
+    echo '                    欢迎来到新的入站测试系统！我们很高兴地告诉你，你现在可以自选试题的考查方向，这或许会使你获得邀请码更容易。更多信息，请点击<a href="https://www.bridge18.us.kg/d/74">这里</a>。';
     echo '                </div>';
+} else {
 }
 ?>
