@@ -5,10 +5,10 @@
     <img src="views/assets/logo_text.svg" alt="十八桥社区" height="60">
   </a>
 
-<h3 align="center">入站测试系统</h3>
+<h3 align="center">论坛入站测试系统</h3>
 
   <p align="center">
-    十八桥社区使用的入站测试系统，基于 Bootstrap 和 PHP。
+    十八桥社区论坛使用的入站测试系统，基于 Bootstrap 和 PHP。
     <br />
     <br />
     <a href="https://github.com/bridgeeighteen/b18-exam/issues">反馈 Bug</a>
@@ -53,14 +53,14 @@
 <!-- 关于本项目 -->
 ## 关于本项目
 
-这是十八桥社区的入站测试系统，用于让用户完成入站测试并根据成绩获得邀请码以注册。
+这是十八桥社区论坛的入站测试系统，用于让用户完成入站测试并根据成绩获得邀请码以在论坛注册。
 
 <p align="right">(<a href="#top">回到顶部</a>)</p>
 
 ### 构建工具
 
 * [Composer](https://getcomposer.org)
-* [Bootstrap 4](https://getbootstrap.com/docs/4.6/)
+* [Bootstrap 4.6](https://getbootstrap.com/docs/4.6/)
 * [jQuery](https://jquery.com)
 
 <p align="right">(<a href="#top">回到顶部</a>)</p>
@@ -94,7 +94,7 @@
 
 4. 使用 phpMyAdmin 等导入 `table.sql` 中定义的数据表及结构。
 
-5. 在 `questions` 表中手工录入试题。在后续版本中，可以通过管理面板导入 Word 试题，由系统自动识别并录入。
+5. 在 `questions` 表中手工录入试题。在后续版本中，可以通过管理面板导入 Markdown 试题，由系统自动识别并录入。
 
 ### 使用 Git 克隆安装
 
@@ -125,7 +125,7 @@
 ## 主要功能
 
 - [x] 支持单选/多选试题
-- [x] 支持多分区试题设置
+- [x] 支持多基类（分区）试题设置
 - [x] 时间作弊检测
 - [x] 自定义过关分数阈值、每题全对分数和多选题漏选分数
 - [x] 完美支持 Flarum 内置 API 接口和 FoF Doorman 插件自带 API 接口
