@@ -8,116 +8,129 @@ use FluxSoft\Turnstile\Turnstile;
 if (CLOSED) {
 } else {
 
-$turnstileResponse = $_POST['cf-turnstile-response'];
+  $turnstileResponse = $_POST['cf-turnstile-response'];
 
-if (empty($turnstileResponse)) {
+  if (empty($turnstileResponse)) {
     echo "入站测试系统使用 Cloudflare Turnstile 验证码，而你提交的信息表单中缺少用于服务器端验证的值。";
     echo "这表明你在填写基本信息时 Turnstile 验证框未正常加载，或者浏览器因不支持 JavaScript 或版本太过老旧而不支持 Turnstile。";
     echo "为了防止账号滥用，请尝试重新填写基本信息，或者更换设备/浏览器。";
     exit;
-}
+  }
 
-$secretKey = CF_TURNSTILE_SECRET;
-$turnstile = new Turnstile($secretKey);
-$verifyResponse = $turnstile->verify($turnstileResponse, $_SERVER['REMOTE_ADDR']);
+  $secretKey = CF_TURNSTILE_SECRET;
+  $turnstile = new Turnstile($secretKey);
+  $verifyResponse = $turnstile->verify($turnstileResponse, $_SERVER['REMOTE_ADDR']);
 
-try {
-  $db = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
-  $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch (PDOException $e) {
-  die("" . $e->getMessage());
-}
+  try {
+    $db = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
+    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+  } catch (PDOException $e) {
+    die("数据库连接失败：" . $e->getMessage() . "\n如果问题依旧存在，你可能需要通过管理邮箱联系我们或者向源代码仓库创建 Issues 以报告此问题。");
+  }
 
-if ($verifyResponse->success) {
-  // Turnstile 验证成功
-} else {
-  if ($verifyResponse->hasErrors()) {
-    foreach ($verifyResponse->errorCodes as $errorCode) {
-      echo 'Turnstile 服务器端验证失败：' . $errorCode;
+  if ($verifyResponse->success) {
+    // Turnstile 验证成功
+  } else {
+    if ($verifyResponse->hasErrors()) {
+      foreach ($verifyResponse->errorCodes as $errorCode) {
+        echo 'Turnstile 服务器端验证失败：' . $errorCode;
+        echo '如果问题依旧存在，你可能需要通过管理邮箱联系我们或者向源代码仓库创建 Issues 以报告此问题。';
+        exit;
+      }
+    } else {
+      echo 'Turnstile 服务器端验证失败，但类型未知。';
       echo '如果问题依旧存在，你可能需要通过管理邮箱联系我们或者向源代码仓库创建 Issues 以报告此问题。';
       exit;
     }
-  } else {
-    echo 'Turnstile 服务器端验证失败，但类型未知。';
-    echo '如果问题依旧存在，你可能需要通过管理邮箱联系我们或者向源代码仓库创建 Issues 以报告此问题。';
-    exit;
   }
-}
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-  $username = $_POST['username'];
-  $email = $_POST['email'];
-  $selectedCategories = $_POST['categories'];
+  if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $username = $_POST['username'];
+    $email = $_POST['email'];
+    $selectedCategories = $_POST['categories'];
 
-  if (count($selectedCategories) !== 2) {
+    if (count($selectedCategories) !== 2) {
       die('错误：选择的基类只能为两个。你的信息未被上传至数据库，请返回并重新填写。');
-  }
+    }
 
-  // 检查电子邮件是否已存在于 users 表中
-  $stmt = $db->prepare("SELECT id FROM `users` WHERE `email` = ?");
-  $stmt->execute([$email]);
-  $existingUser = $stmt->fetch(PDO::FETCH_ASSOC);
-
-  if ($existingUser) {
-    // 如果电子邮件已存在，则使用现有用户的 ID
-    $userId = $existingUser['id'];
-  } else {
-    // 如果电子邮件不存在，则将用户加入 users 表
-    $stmt = $db->prepare("INSERT INTO `users` (`username`, `email`, `selected_categories`) VALUES (?, ?, ?)");
-    $stmt->execute([$username, $email, implode(',', $selectedCategories)]);
-
-    // 获取最新用户的 ID
+    // 检查电子邮件是否已存在于 users 表中
     $stmt = $db->prepare("SELECT id FROM `users` WHERE `email` = ?");
     $stmt->execute([$email]);
-    $newUser = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-    if (!$newUser) {
+    $existingUser = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($existingUser) {
+      // 如果电子邮件已存在，则使用现有用户的 ID
+      $userId = $existingUser['id'];
+    } else {
+      // 如果电子邮件不存在，则将用户加入 users 表
+      $stmt = $db->prepare("INSERT INTO `users` (`username`, `email`, `selected_categories`) VALUES (?, ?, ?)");
+      $stmt->execute([$username, $email, implode(',', $selectedCategories)]);
+
+      // 获取最新用户的 ID
+      $stmt = $db->prepare("SELECT id FROM `users` WHERE `email` = ?");
+      $stmt->execute([$email]);
+      $newUser = $stmt->fetch(PDO::FETCH_ASSOC);
+
+      if (!$newUser) {
+        die('错误：用户信息未找到。请立即通过管理邮箱报告此问题。');
+      }
+
+      $userId = $newUser['id'];
+    }
+
+    // 从 users 表中获取用户信息
+    $stmt = $db->prepare("SELECT * FROM `users` WHERE `id` = ?");
+    $stmt->execute([$userId]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    // 确保至少有一条记录
+    if (!$user) {
       die('错误：用户信息未找到。请立即通过管理邮箱报告此问题。');
     }
 
-    $userId = $newUser['id'];
+    // 获取所有基本礼仪题
+    $stmt = $db->prepare("SELECT * FROM `questions` WHERE `category` = 'Etiquette'");
+    $stmt->execute();
+    $etiquetteQuestions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // 确保至少有 10 道基本礼仪题
+    if (count($etiquetteQuestions) < 10) {
+        die('题库中的基本礼仪题数量不足。请立即通过管理邮箱报告此问题。');
+    }
+
+    // 随机抽取 10 道基本礼仪题
+    shuffle($etiquetteQuestions);
+    $etiquetteQuestions = array_slice($etiquetteQuestions, 0, 10);
+
+    // 获取所有自选组合题
+    $baseQuestions = [];
+    foreach ($selectedCategories as $category) {
+        $stmt = $db->prepare("SELECT * FROM `questions` WHERE `category` = ? AND `category` != 'Etiquette'");
+        $stmt->execute([$category]);
+        $baseQuestions = array_merge($baseQuestions, $stmt->fetchAll(PDO::FETCH_ASSOC));
+    }
+
+    // 确保至少有 15 道自选组合题
+    if (count($baseQuestions) < 15) {
+        die('题库中的自选组合题数量不足。请立即通过管理邮箱报告此问题。');
+    }
+
+    // 随机抽取 15 道自选组合题
+    shuffle($baseQuestions);
+    $baseQuestions = array_slice($baseQuestions, 0, 15);
+
+    // 合并题目，确保基本礼仪题在前
+    $questions = array_merge($etiquetteQuestions, $baseQuestions);
+
+    // 更新用户开始时间
+    $stmt = $db->prepare("UPDATE `users` SET `start_time` = NOW() WHERE `id` = ?");
+    $stmt->execute([$userId]);
+
+    // 仅执行一次
+    $stmt->closeCursor();
   }
 
-  // 更新用户开始时间
-  $stmt = $db->prepare("UPDATE `users` SET `start_time` = NOW() WHERE `id` = ?");
-  $stmt->execute([$userId]);
-
-  // 仅执行一次
-  $stmt->closeCursor();
-}
-
-// 从 users 表中获取用户信息
-$stmt = $db->prepare("SELECT * FROM `users` WHERE `id` = ?");
-$stmt->execute([$userId]);
-$user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-// 确保至少有一条记录
-if (!$user) {
-  die('错误：用户信息未找到。请立即通过管理邮箱报告此问题。');
-}
-
-// 从题库中随机抽取题目
-$baseQuestions = [];
-foreach ($selectedCategories as $category) {
-    $stmt = $db->prepare("SELECT * FROM `questions` WHERE `category` = ? AND `category` != 'Etiquette' LIMIT 15");
-    $stmt->execute([$category]);
-    $baseQuestions = array_merge($baseQuestions, $stmt->fetchAll(PDO::FETCH_ASSOC));
-}
-
-// 获取基本礼仪题
-$stmt = $db->prepare("SELECT * FROM `questions` WHERE `category` = 'Etiquette' LIMIT 10");
-$stmt->execute();
-$etiquetteQuestions = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// 合并题目
-$questions = array_merge($etiquetteQuestions, $baseQuestions);
-
-if (count($questions) < 25) {
-  die('错误：题库中的题目数量不足。请立即通过管理邮箱报告此问题。');
-}
-
-
-// 开始HTML输出
+  // 开始HTML输出
 }
 ?>
 <!DOCTYPE html>
@@ -154,8 +167,8 @@ if (count($questions) < 25) {
   </script>
 </head>
 
-<?php 
-include './views/nav.php'; 
+<?php
+include './views/nav.php';
 if (CLOSED) {
   echo '<div class="alert alert-warning" role="alert">测试通道已关闭。更多详情请查看社区论坛和联邦宇宙官宣账号。</div>';
   include './views/footer.php';
@@ -184,9 +197,9 @@ if (CLOSED) {
 </table>
 
 <form id="examForm" action="result.php" method="post">
-<?php
-$questionNumber = 1; // 初始化题号
-foreach ($questions as $question) {
+  <?php
+  $questionNumber = 1; // 初始化题号
+  foreach ($questions as $question) {
     echo '
                     <div class="card mb-3">
                         <div class="card-body">
@@ -197,33 +210,33 @@ foreach ($questions as $question) {
                             <input type="hidden" name="question_' . htmlspecialchars($question['id']) . '" value="' . htmlspecialchars($question['id']) . '">';
 
     if ($question['type'] === 'single') {
-        for ($i = 'A'; $i <= 'D'; $i++) {
-            echo '
+      for ($i = 'A'; $i <= 'D'; $i++) {
+        echo '
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="answer_' . htmlspecialchars($question['id']) . '" value="' . htmlspecialchars($i) . '" id="singleCheck' . htmlspecialchars($question['id']) . '_' . htmlspecialchars($i) . '">
                                 <label class="form-check-label" for="singleCheck' . htmlspecialchars($question['id']) . '_' . htmlspecialchars($i) . '">
                                     ' . htmlspecialchars($i) . '. ' . htmlspecialchars($question['option_' . strtolower($i)]) . '
                                 </label>
                             </div>';
-        }
+      }
     } else { // multiple
-        for ($i = 'A'; $i <= 'D'; $i++) {
-            echo '
+      for ($i = 'A'; $i <= 'D'; $i++) {
+        echo '
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" name="answer_' . htmlspecialchars($question['id']) . '[]" value="' . htmlspecialchars($i) . '" id="multipleCheck' . htmlspecialchars($question['id']) . '_' . htmlspecialchars($i) . '">
                                 <label class="form-check-label" for="multipleCheck' . htmlspecialchars($question['id']) . '_' . htmlspecialchars($i) . '">
                                     ' . htmlspecialchars($i) . '. ' . htmlspecialchars($question['option_' . strtolower($i)]) . '
                                 </label>
                             </div>';
-        }
+      }
     }
 
     echo '
                         </div>
                     </div>';
     $questionNumber++; // 增加题号
-}
-?>
+  }
+  ?>
   <button type="submit" class="btn btn-primary">提交</button>
 </form>
 <?php include './views/footer.php'; ?>
