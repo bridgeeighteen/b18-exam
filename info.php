@@ -38,12 +38,32 @@ if (CLOSED) {
                     </div>
                     <div class="form-group">
                       <label for="categories">选择基类</label>
-                      <select class="form-control" id="categories" name="categories[]" multiple required>
-                        <option value="IT">IT</option>
-                        <option value="ACGN">ACGN</option>
-                        <option value="VOCOLOID">VOCOLOID</option>
-                        <option value="Broadcasting">广播电视</option>
-                      </select>
+                      <div>
+                          <div class="form-check">
+                              <input class="form-check-input" type="checkbox" name="categories[]" value="IT" id="category_IT" required>
+                              <label class="form-check-label" for="category_IT">
+                                  IT
+                              </label>
+                          </div>
+                          <div class="form-check">
+                              <input class="form-check-input" type="checkbox" name="categories[]" value="ACGN" id="category_ACGN" required>
+                              <label class="form-check-label" for="category_ACGN">
+                                  ACGN
+                              </label>
+                          </div>
+                          <div class="form-check">
+                              <input class="form-check-input" type="checkbox" name="categories[]" value="Virtual_Singer" id="category_Virtual_Singer" required>
+                              <label class="form-check-label" for="category_Virtual_Singer">
+                                  虚拟歌手
+                              </label>
+                          </div>
+                          <div class="form-check">
+                              <input class="form-check-input" type="checkbox" name="categories[]" value="Broadcasting" id="category_Broadcasting" required>
+                              <label class="form-check-label" for="category_Broadcasting">
+                                  广播电视
+                              </label>
+                          </div>
+                      </div>
                       <small id="categoriesHelp" class="form-text text-muted">社区将论坛目前规划的板块划分为以上四个基本类型，请从中选择两类作为自选试题的考查方向。</small>
                     </div>
                     <div class="form-group form-check">
@@ -53,6 +73,18 @@ if (CLOSED) {
                     <div class="form-group" id="turnstile"></div>
                     <button type="submit" class="btn btn-primary">开始测试</button>
                     <script>
+                      document.addEventListener('DOMContentLoaded', function() {
+                          const checkboxes = document.querySelectorAll('input[name="categories[]"]');
+                          checkboxes.forEach(checkbox => {
+                              checkbox.addEventListener('change', function() {
+                                  const checkedCount = document.querySelectorAll('input[name="categories[]"]:checked').length;
+                                  if (checkedCount > 2) {
+                                      this.checked = false;
+                                      alert('只能选择两个基类。');
+                                  }
+                              });
+                          });
+                      });
                       if (typeof turnstile !== 'undefined') {
                         turnstile.ready(function () {
                             turnstile.render('#turnstile', {
