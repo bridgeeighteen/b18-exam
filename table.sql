@@ -21,7 +21,7 @@ SET time_zone = "+08:00";
 
 CREATE TABLE `questions` (
   `id` int NOT NULL,
-  `category` enum('IT','ACGN','VOCOLOID','Broadcasting','Etiquette') NOT NULL,
+  `category` enum('IT','ACGN','Virtual_Singer','Broadcasting','Etiquette') NOT NULL,
   `question_text` text NOT NULL,
   `option_a` varchar(255) NOT NULL,
   `option_b` varchar(255) NOT NULL,
