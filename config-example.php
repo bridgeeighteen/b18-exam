@@ -16,6 +16,7 @@ define('API_X_CSRF_TOKEN', 'YOUR_API_X_CSRF_TOKEN'); // Flarum API 的令牌，�
 
 // 测试配置
 define('CLOSED', false); // 是否关闭测试通道
+define('CLOSED_REASON', ''); // 关闭测试通道的原因。请记得在末尾加句号 / 感叹号。
 define('CODE_TYPE', 'B18R'); // 邀请码类型，出现在其前缀
 define('GROUP_ID', 3); // 邀请码创建用户所属用户组，默认注册用户（3）
 define('MAX_USES', 1); // 邀请码最大使用次数，默认为 1

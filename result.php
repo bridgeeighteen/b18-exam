@@ -155,7 +155,7 @@ function recordTimes($userId)
     $user = $result->fetch_assoc();
 
     // Calculate expected end time
-    $expectedEndTime = date('Y-m-d H:i:s', strtotime($user['start_time'] . '+70 minutes'));
+    $expectedEndTime = date('Y-m-d H:i:s', strtotime($user['start_time'] . '+' . EXAM_REMAIN_TIME . ' minutes'));
 
     // Get current server time
     $currentServerTime = date('Y-m-d H:i:s');

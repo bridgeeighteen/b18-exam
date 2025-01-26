@@ -171,7 +171,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <?php
 require './views/nav.php';
 if (CLOSED) {
-    echo '<div class="alert alert-warning" role="alert">测试通道已关闭。更多详情请查看社区论坛和联邦宇宙官宣账号。</div>';
+    echo '<div class="alert alert-warning" role="alert">测试通道已关闭，原因：' . CLOSED_REASON . '更多详情请查看社区论坛和联邦宇宙官宣账号。</div>';
     include './views/footer.php';
     exit;
 } else {
