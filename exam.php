@@ -1,5 +1,4 @@
 <?php
-// 包含数据库配置文件
 require_once 'config.php';
 require_once './vendor/autoload.php';
 
@@ -8,18 +7,16 @@ use FluxSoft\Turnstile\Turnstile;
 if (CLOSED) {
 } else {
 
-  $turnstileResponse = $_POST['cf-turnstile-response'];
-
-  if (empty($turnstileResponse)) {
+  if (empty($_POST['cf-turnstile-response'])) {
     echo "入站测试系统使用 Cloudflare Turnstile 验证码，而你提交的信息表单中缺少用于服务器端验证的值。";
-    echo "这表明你在填写基本信息时 Turnstile 验证框未正常加载，或者浏览器因不支持 JavaScript 或版本太过老旧而不支持 Turnstile。";
-    echo "为了防止账号滥用，请尝试重新填写基本信息，或者更换设备/浏览器。";
+    echo "\n这表明你在填写基本信息时 Turnstile 验证框未正常加载，或者浏览器因不支持 JavaScript 或版本太过老旧而不支持 Turnstile。";
+    echo "\n为了防止账号滥用，请尝试重新填写基本信息，或者更换设备/浏览器。";
     exit;
+  } else {
+    $secretKey = CF_TURNSTILE_SECRET;
+    $turnstile = new Turnstile($secretKey);
+    $verifyResponse = $turnstile->verify($_POST['cf-turnstile-response'], $_SERVER['REMOTE_ADDR']);
   }
-
-  $secretKey = CF_TURNSTILE_SECRET;
-  $turnstile = new Turnstile($secretKey);
-  $verifyResponse = $turnstile->verify($turnstileResponse, $_SERVER['REMOTE_ADDR']);
 
   try {
     $db = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
@@ -37,10 +34,13 @@ if (CLOSED) {
         echo '如果问题依旧存在，你可能需要通过管理邮箱联系我们或者向源代码仓库创建 Issues 以报告此问题。';
         exit;
       }
-    } else {
-      echo 'Turnstile 服务器端验证失败，但类型未知。';
-      echo '如果问题依旧存在，你可能需要通过管理邮箱联系我们或者向源代码仓库创建 Issues 以报告此问题。';
-      exit;
+    } elseif (CF_TURNSTILE_SITEKEY == "1x00000000000000000000AA" && CF_TURNSTILE_SECRET == "1x0000000000000000000000000000000AA") {
+        echo '警告：你正在使用配置模板提供的测试用 Turnstile 密钥。如果你决定将系统用于生产环境，请前往 Cloudflare 仪表板创建一对新密钥。';
+      } else {
+        echo 'Turnstile 服务器端验证失败，但类型未知。';
+        echo '如果问题依旧存在，你可能需要通过管理邮箱联系我们或者向源代码仓库创建 Issues 以报告此问题。';
+        exit;
+      }
     }
   }
 
@@ -59,8 +59,10 @@ if (CLOSED) {
     $existingUser = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($existingUser) {
-      // 如果电子邮件已存在，则使用现有用户的 ID
+      // 如果电子邮件已存在，则使用现有用户的 ID，并更新选择的基类
       $userId = $existingUser['id'];
+      $stmt = $db->prepare("UPDATE `users` SET `selected_categories` = ? WHERE `id` = ?");
+      $stmt->execute([implode(',', $selectedCategories), $userId]);
     } else {
       // 如果电子邮件不存在，则将用户加入 users 表
       $stmt = $db->prepare("INSERT INTO `users` (`username`, `email`, `selected_categories`) VALUES (?, ?, ?)");
@@ -128,10 +130,9 @@ if (CLOSED) {
 
     // 仅执行一次
     $stmt->closeCursor();
-  }
 
-  // 开始HTML输出
-}
+    // 开始HTML输出
+  }
 ?>
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -160,7 +161,7 @@ if (CLOSED) {
     }
 
     window.onload = function() {
-      var duration = 70 * 60, // 70 minutes
+      var duration = <?php echo htmlspecialchars(EXAM_REMAIN_TIME); ?> * 60,
         display = document.querySelector('#timer');
       startTimer(duration, display);
     };

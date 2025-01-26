@@ -8,20 +8,22 @@ define('DB_HOST', 'localhost:3306'); // 数据库主机
 define('DB_NAME', 'YOUR_DATABASE_NAME'); // 数据库名
 define('DB_USER', 'USERNAME'); // 数据库用户名
 define('DB_PASS', 'PASSWORD'); // 数据库密码
+define('DB_TIMEZONE', 'Asia/Shanghai'); // PHP 强制设置的数据库时区（参见 https://www.php.net/manual/timezones.php）
 
 // API 配置
 define('API_SITE', 'www.bridge18.us.kg'); // Flarum 站点域名
 define('API_X_CSRF_TOKEN', 'YOUR_API_X_CSRF_TOKEN'); // Flarum API 的令牌，直接从个人设置 -> 安全页面创建并获取
 
-// 其他配置
+// 测试配置
 define('CLOSED', false); // 是否关闭测试通道
 define('CODE_TYPE', 'B18R'); // 邀请码类型，出现在其前缀
 define('GROUP_ID', 3); // 邀请码创建用户所属用户组，默认注册用户（3）
 define('MAX_USES', 1); // 邀请码最大使用次数，默认为 1
 define('ACTIVATES', false); // 使用邀请码后是否立即激活，默认否
+define('EXAM_REMAIN_TIME', '20'); // 测试时长，以分钟为单位
 define('SCORE_THRESHOLD', '60'); // 通过分数阈值，默认为 60 分
 define('SCORE_CORRECT_QUESTION', '4'); // 答对每道题目所给的分数，默认为 4 分（共 25 道题）
-define('SCORE_PARTIAL_MULTIPLE_QUESTION', '2'); // 多选题答对但不全所给的分数，默认为 2 分
+define('SCORE_PARTIAL_MULTIPLE_QUESTION', '1'); // 多选题答对但不全所给的分数，默认为 1 分
 
 // Cloudflare Turnstile
 define('CF_TURNSTILE_SITEKEY', '1x00000000000000000000AA'); // Cloudflare Turnstile 的 Site Key
