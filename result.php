@@ -32,7 +32,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     recordTimes($userId);
 }
 
-function calculateScore($answers) {
+function calculateScore($answers)
+{
     $totalQuestions = 0;
     $totalScore = 0; // Initialize total score
 
@@ -65,9 +66,13 @@ function calculateScore($answers) {
             $correctAnswer = str_replace(['(', ')'], '', strtolower($question['answer']));
             
             // Convert all elements to strings before applying strtolower
-            $submittedAnswerStr = implode(',', array_map(function ($item) {
-                return is_string($item) ? strtolower($item) : strtolower((string)$item);
-            }, $submittedAnswers));
+            $submittedAnswerStr = implode(
+                ',', array_map(
+                    function ($item) {
+                        return is_string($item) ? strtolower($item) : strtolower((string)$item);
+                    }, $submittedAnswers
+                )
+            );
 
             // Ensure $submittedAnswerStr is not an empty string
             $submittedAnswerStr = $submittedAnswerStr ?: '';
@@ -112,7 +117,8 @@ function calculateScore($answers) {
     return $totalScore;
 }
 
-function storeResults($userId, $score, $invitationCode) {
+function storeResults($userId, $score, $invitationCode)
+{
     // Establish database connection
     $conn = connectToDatabase();
 
@@ -128,7 +134,8 @@ function storeResults($userId, $score, $invitationCode) {
     closeDatabaseConnection($conn);
 }
 
-function recordTimes($userId) {
+function recordTimes($userId)
+{
     // Establish database connection
     $conn = connectToDatabase();
 
@@ -186,7 +193,8 @@ function recordTimes($userId) {
 }
 
 // Extracts the key from the JSON response
-function extractKey($data) {
+function extractKey($data)
+{
     try {
         $dataDict = json_decode($data, true);
         $keyValue = $dataDict['data']['attributes']['key'];
@@ -198,7 +206,8 @@ function extractKey($data) {
 }
 
 // Generates a random string of specified length containing letters and digits
-function generateRandomString($length = 8) {
+function generateRandomString($length = 8)
+{
     $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     $charsArray = [];
     for ($i = 0; $i < $length; $i++) {
@@ -210,7 +219,8 @@ function generateRandomString($length = 8) {
 }
 
 // Sends a request to generate a door key
-function getDoorKey($key) {
+function getDoorKey($key)
+{
     $url = 'https://' . API_SITE . '/api/fof/doorkeys';
     $headers = [
         'Content-Type: application/json; charset=UTF-8',
@@ -266,18 +276,20 @@ function getDoorKey($key) {
     return $responseData['data']['attributes']['key'];
 }
 // Main function to generate key
-function generateKey() {
+function generateKey()
+{
     $key = [];
         $randomNum = generateRandomString();
         $result = getDoorKey($randomNum);
         
-        if ($result !== null) {
-            $key[] = $result;
-        }
+    if ($result !== null) {
+        $key[] = $result;
+    }
     
     return $key;
 }
-function generateInvitationCode($score) {
+function generateInvitationCode($score)
+{
     // Set the score threshold
     $threshold = SCORE_THRESHOLD;
 
@@ -305,13 +317,13 @@ function generateInvitationCode($score) {
     <link rel="stylesheet" href="./vendor/twbs/bootstrap/dist/css/bootstrap.min.css">
 </head>
 
-<?php include './views/nav.php'; ?>
+<?php require './views/nav.php'; ?>
                 <div class="card">
                     <div class="card-header">
                         测试结果
                     </div>
                     <div class="card-body">
-                        <?php if (isset($timeCheatDetected) && $timeCheatDetected): ?>
+                        <?php if (isset($timeCheatDetected) && $timeCheatDetected) : ?>
                             <div class="alert alert-danger" role="alert">作弊检测：你违反了测试的时间限制。你的信息已被删除，请重新开始测试。</div>
                             <h5 class="card-title">测试失败。</h5>
                             <p class="card-subtitle">系统检测到你在测试过程中有作弊行为。</p>
@@ -328,4 +340,4 @@ function generateInvitationCode($score) {
                         <?php endif; ?>
                     </div>
                 </div>
-<?php include './views/footer.php'; ?>
+<?php require './views/footer.php'; ?>

@@ -1,2 +1,2 @@
 grumphp:
-    tasks: { phpunit: null }
+    tasks: { phpcs: null }

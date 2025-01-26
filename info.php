@@ -1,5 +1,5 @@
 <?php 
-include 'config.php';
+require 'config.php';
 ?>
 
 <!DOCTYPE html>
@@ -14,11 +14,11 @@ include 'config.php';
 </head>
 
 <?php 
-include './views/nav.php'; 
+require './views/nav.php'; 
 if (CLOSED) {
-  echo '<div class="alert alert-warning" role="alert">测试通道已关闭。更多详情请查看社区论坛和联邦宇宙官宣账号。</div>';
-  include './views/footer.php';
-  exit;
+    echo '<div class="alert alert-warning" role="alert">测试通道已关闭。更多详情请查看社区论坛和联邦宇宙官宣账号。</div>';
+    include './views/footer.php';
+    exit;
 } else {
 }
 ?>
@@ -68,4 +68,4 @@ if (CLOSED) {
                       }
                     </script>
                  </form>
-<?php include './views/footer.php'; ?>
+<?php require './views/footer.php'; ?>

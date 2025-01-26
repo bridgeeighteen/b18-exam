@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="./vendor/twbs/bootstrap/dist/css/bootstrap.min.css">
 </head>
 
-<?php include './views/nav.php'; ?>
+<?php require './views/nav.php'; ?>
                 <div class="jumbotron">
                     <h1 class="display-4">你好！</h1>
                     <p class="lead">欢迎来到十八桥社区的论坛入站测试系统。你只需要让测试总分数达到 <?php echo htmlspecialchars(SCORE_THRESHOLD); ?> 分及以上，就可以获得邀请码用于注册账号。</p>
@@ -18,9 +18,9 @@
                     <p>请先阅读<a href="https://www.bridge18.us.kg/p/3-code-of-user-conduct">用户行为准则</a>，确认完全理解其内容后再开始测试。</p>
                     <?php
                     if (CLOSED) {
-                      echo '<button type="button" class="btn btn-lg btn-primary" disabled>测试通道已关闭</button>';
+                        echo '<button type="button" class="btn btn-lg btn-primary" disabled>测试通道已关闭</button>';
                     } else {
-                      echo '<a class="btn btn-primary btn-lg" href="info.php" role="button">立即测试</a>';
+                        echo '<a class="btn btn-primary btn-lg" href="info.php" role="button">立即测试</a>';
                     }
                     ?>
                 </div>
@@ -46,4 +46,4 @@
                 </div>
               </div>
         </div>
-<?php include './views/footer.php'; ?>
+<?php require './views/footer.php'; ?>

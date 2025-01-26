@@ -1,7 +1,8 @@
 <?php
 
 require_once __DIR__ . '/../config.php';
-function check_access($access_token) {
+function check_access($access_token)
+{
     // 使用 Flarum API 获取用户信息
     $url = 'https://' . API_SITE . '/api/user?access_token=' . $access_token;
     $ch = curl_init($url);
