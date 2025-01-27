@@ -16,8 +16,8 @@
     <a href="https://github.com/bridgeeighteen/b18-exam/issues">请求新功能</a>
     <br />
     <br />
+    <img src="https://scrutinizer-ci.com/g/bridgeeighteen/b18-exam/badges/quality-score.png?b=main" alt=" Scrutinizer 分数">
     <img src="https://img.shields.io/github/contributors/bridgeeighteen/b18-exam.svg" alt="贡献者总数">
-    <img src="https://img.shields.io/github/forks/bridgeeighteen/b18-exam.svg" alt="Forks 总数">
     <img src="https://img.shields.io/github/stars/bridgeeighteen/b18-exam.svg" alt="Stars 总数">
     <img src="https://img.shields.io/github/issues/bridgeeighteen/b18-exam.svg" alt="Issues 总数">
     <img src="https://img.shields.io/packagist/v/bridgeeighteen/exam" alt="Composer 版本">
@@ -144,7 +144,7 @@
 
 1. 复刻（Fork）本项目
 2. 创建你的 Feature 分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交你的变更 (`git commit -m 'Add some AmazingFeature'`)
+3. 提交你的变更 (`git commit -m 'Add some amazing feature'`)
 4. 推送到该分支 (`git push origin feature/AmazingFeature`)
 5. 创建一个拉取请求（Pull Request）
 
