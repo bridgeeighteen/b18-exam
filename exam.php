@@ -2,6 +2,11 @@
 require_once 'config.php';
 require_once './vendor/autoload.php';
 
+if (DB_TIMEZONE_LOCK) {
+} else {
+    date_default_timezone_set(PHP_TIMEZONE);
+}
+
 use FluxSoft\Turnstile\Turnstile;
 
 if (CLOSED) {

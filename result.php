@@ -62,6 +62,12 @@ function calculateScore($answers)
                 }
             }
 
+            // Check if the question was answered
+            if (empty($submittedAnswers)) {
+                // If no answer was provided, score is 0 for this question
+                continue;
+            }
+
             // Normalize the correct answer to match the expected format
             $correctAnswer = str_replace(['(', ')'], '', strtolower($question['answer']));
             
@@ -154,26 +160,29 @@ function recordTimes($userId)
     $result = $stmt->get_result();
     $user = $result->fetch_assoc();
 
+    // Get the start time
+    $startTime = $user['start_time'];
+
     // Calculate expected end time
-    $expectedEndTime = date('Y-m-d H:i:s', strtotime($user['start_time'] . '+' . EXAM_REMAIN_TIME . ' minutes'));
+    $expectedEndTime = date('Y-m-d H:i:s', strtotime($startTime . '+' . EXAM_REMAIN_TIME . ' minutes'));
 
     // Get current server time
     $currentServerTime = date('Y-m-d H:i:s');
 
     // Check if user violated time limit
     if ($currentServerTime > $expectedEndTime) {
-        // User violated time limit
-        $timeCheatDetected = true;
+        // Remove result record
+        $stmt = $conn->prepare("DELETE FROM results WHERE user_id = ?");
+        $stmt->bind_param("i", $userId);
+        $stmt->execute();
 
         // Remove user record
         $stmt = $conn->prepare("DELETE FROM users WHERE id = ?");
         $stmt->bind_param("i", $userId);
         $stmt->execute();
 
-        // Remove result record
-        $stmt = $conn->prepare("DELETE FROM results WHERE user_id = ?");
-        $stmt->bind_param("i", $userId);
-        $stmt->execute();
+        // User violated time limit
+        $timeCheatDetected = true;
     } else {
         if ($exists) {
             // Update the end time for existing user

@@ -8,7 +8,8 @@ define('DB_HOST', 'localhost:3306'); // 数据库主机
 define('DB_NAME', 'YOUR_DATABASE_NAME'); // 数据库名
 define('DB_USER', 'USERNAME'); // 数据库用户名
 define('DB_PASS', 'PASSWORD'); // 数据库密码
-define('DB_TIMEZONE', 'Asia/Shanghai'); // PHP 强制设置的数据库时区（参见 https://www.php.net/manual/timezones.php）。为防止冲突，这里的时区应与你在导入数据库模板前在模板开头修改的时区一致。
+define('DB_TIMEZONE_LOCK', false); // 数据库时区锁情况确认
+define('PHP_TIMEZONE', 'Asia/Shanghai'); // PHP 的时区（参见 https://www.php.net/manual/timezones.php）。为防止冲突，这里的时区应与你在导入数据库模板前在模板开头修改的时区一致。
 
 // API 配置
 define('API_SITE', 'www.bridge18.us.kg'); // Flarum 站点域名

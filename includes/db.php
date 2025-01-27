@@ -2,6 +2,11 @@
 
 require_once __DIR__ . '/../config.php';
 
+if (DB_TIMEZONE_LOCK) {
+} else {
+    date_default_timezone_set(PHP_TIMEZONE);
+}
+
 // Establish database connection
 function connectToDatabase()
 {
@@ -9,7 +14,6 @@ function connectToDatabase()
     if ($conn->connect_error) {
         die("Connection failed: " . $conn->connect_error);
     }
-    date_default_timezone_set(DB_TIMEZONE);
     return $conn;
 }
 
