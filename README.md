@@ -92,7 +92,7 @@
 
 3. 在 `config-example.php` 中根据注释提示完成配置。如果只是用于测试，须保留模板中给定的 Turnstile 密钥。
 
-4. 使用 phpMyAdmin 等导入 `table.sql` 中定义的数据表及结构。
+4. 使用 phpMyAdmin 等导入 `table.sql` 中定义的数据表及结构。导入前先在该文件的 `SET time_zone = "+08:00";` 一行中按照通用表示修改时区，然后到第 3 步设置的配置文件中找到 `define('DB_TIMEZONE', 'Asia/Shanghai');` 配置项，按照其后的注释以 PHP 支持的格式同步修改。管理者在中国大陆的无需改动，在中国港澳台地区的需要修改 PHP 时区为本地时区。
 
 5. 在 `questions` 表中手工录入试题。在后续版本中，可以通过管理面板导入 Markdown 试题，由系统自动识别并录入。
 
@@ -114,7 +114,7 @@
 
 4. 在 `config-example.php` 中根据注释提示完成配置。如果只是用于测试，须保留模板中给定的 Turnstile 密钥。
 
-5. 使用 phpMyAdmin 等导入 `table.sql` 中定义的数据表及结构。
+5. 使用 phpMyAdmin 等导入 `table.sql` 中定义的数据表及结构。导入前先在该文件的 `SET time_zone = "+08:00";` 一行中按照通用表示修改时区，然后到第 3 步设置的配置文件中找到 `define('DB_TIMEZONE', 'Asia/Shanghai');` 配置项，按照其后的注释以 PHP 支持的格式同步修改。管理者在中国大陆的无需改动，在中国港澳台地区的需要修改 PHP 时区为本地时区。
 
 6. 在 `questions` 表中手工录入试题。在后续版本中，可以通过管理面板导入 Markdown 试题，由系统自动识别并录入。
 
