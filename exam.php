@@ -42,130 +42,130 @@ if (CLOSED) {
             exit;
         }
     }
-}
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $username = $_POST['username'];
-    $email = $_POST['email'];
-    $selectedCategories = $_POST['categories'];
+    if ($_SERVER["REQUEST_METHOD"] == "POST") {
+        $username = $_POST['username'];
+        $email = $_POST['email'];
+        $selectedCategories = $_POST['categories'];
 
-    if (count($selectedCategories) !== 2) {
-        die('错误：选择的基类只能为两个。你的信息未被上传至数据库，请返回并重新填写。');
-    }
+        if (count($selectedCategories) !== 2) {
+            die('错误：选择的基类只能为两个。你的信息未被上传至数据库，请返回并重新填写。');
+        }
 
-    // 检查电子邮件是否已存在于 users 表中
-    $stmt = $db->prepare("SELECT id FROM `users` WHERE `email` = ?");
-    $stmt->execute([$email]);
-    $existingUser = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if ($existingUser) {
-        // 如果电子邮件已存在，则使用现有用户的 ID，并更新选择的基类
-        $userId = $existingUser['id'];
-        $stmt = $db->prepare("UPDATE `users` SET `selected_categories` = ? WHERE `id` = ?");
-        $stmt->execute([implode(',', $selectedCategories), $userId]);
-    } else {
-        // 如果电子邮件不存在，则将用户加入 users 表
-        $stmt = $db->prepare("INSERT INTO `users` (`username`, `email`, `selected_categories`) VALUES (?, ?, ?)");
-        $stmt->execute([$username, $email, implode(',', $selectedCategories)]);
-
-        // 获取最新用户的 ID
+        // 检查电子邮件是否已存在于 users 表中
         $stmt = $db->prepare("SELECT id FROM `users` WHERE `email` = ?");
         $stmt->execute([$email]);
-        $newUser = $stmt->fetch(PDO::FETCH_ASSOC);
+        $existingUser = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if (!$newUser) {
+        if ($existingUser) {
+            // 如果电子邮件已存在，则使用现有用户的 ID，并更新选择的基类
+            $userId = $existingUser['id'];
+            $stmt = $db->prepare("UPDATE `users` SET `selected_categories` = ? WHERE `id` = ?");
+            $stmt->execute([implode(',', $selectedCategories), $userId]);
+        } else {
+            // 如果电子邮件不存在，则将用户加入 users 表
+            $stmt = $db->prepare("INSERT INTO `users` (`username`, `email`, `selected_categories`) VALUES (?, ?, ?)");
+            $stmt->execute([$username, $email, implode(',', $selectedCategories)]);
+
+            // 获取最新用户的 ID
+            $stmt = $db->prepare("SELECT id FROM `users` WHERE `email` = ?");
+            $stmt->execute([$email]);
+            $newUser = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$newUser) {
+                die('错误：用户信息未找到。请立即通过管理邮箱报告此问题。');
+            }
+
+            $userId = $newUser['id'];
+        }
+
+        // 从 users 表中获取用户信息
+        $stmt = $db->prepare("SELECT * FROM `users` WHERE `id` = ?");
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        // 确保至少有一条记录
+        if (!$user) {
             die('错误：用户信息未找到。请立即通过管理邮箱报告此问题。');
         }
 
-        $userId = $newUser['id'];
+        // 获取所有基本礼仪题
+        $stmt = $db->prepare("SELECT * FROM `questions` WHERE `category` = 'Etiquette'");
+        $stmt->execute();
+        $etiquetteQuestions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // 确保至少有 10 道基本礼仪题
+        if (count($etiquetteQuestions) < 10) {
+            die('题库中的基本礼仪题数量不足。请立即通过管理邮箱报告此问题。');
+        }
+
+        // 随机抽取 10 道基本礼仪题
+        shuffle($etiquetteQuestions);
+        $etiquetteQuestions = array_slice($etiquetteQuestions, 0, 10);
+
+        // 获取所有自选组合题
+        $baseQuestions = [];
+        foreach ($selectedCategories as $category) {
+            $stmt = $db->prepare("SELECT * FROM `questions` WHERE `category` = ? AND `category` != 'Etiquette'");
+            $stmt->execute([$category]);
+            $baseQuestions = array_merge($baseQuestions, $stmt->fetchAll(PDO::FETCH_ASSOC));
+        }
+
+        // 确保至少有 15 道自选组合题
+        if (count($baseQuestions) < 15) {
+            die('题库中的自选组合题数量不足。请立即通过管理邮箱报告此问题。');
+        }
+
+        // 随机抽取 15 道自选组合题
+        shuffle($baseQuestions);
+        $baseQuestions = array_slice($baseQuestions, 0, 15);
+
+        // 合并题目，确保基本礼仪题在前
+        $questions = array_merge($etiquetteQuestions, $baseQuestions);
+
+        // 更新用户开始时间
+        $stmt = $db->prepare("UPDATE `users` SET `start_time` = NOW() WHERE `id` = ?");
+        $stmt->execute([$userId]);
+
+        // 仅执行一次
+        $stmt->closeCursor();
+
+        // 开始HTML输出
     }
-
-    // 从 users 表中获取用户信息
-    $stmt = $db->prepare("SELECT * FROM `users` WHERE `id` = ?");
-    $stmt->execute([$userId]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    // 确保至少有一条记录
-    if (!$user) {
-        die('错误：用户信息未找到。请立即通过管理邮箱报告此问题。');
-    }
-
-    // 获取所有基本礼仪题
-    $stmt = $db->prepare("SELECT * FROM `questions` WHERE `category` = 'Etiquette'");
-    $stmt->execute();
-    $etiquetteQuestions = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // 确保至少有 10 道基本礼仪题
-    if (count($etiquetteQuestions) < 10) {
-        die('题库中的基本礼仪题数量不足。请立即通过管理邮箱报告此问题。');
-    }
-
-    // 随机抽取 10 道基本礼仪题
-    shuffle($etiquetteQuestions);
-    $etiquetteQuestions = array_slice($etiquetteQuestions, 0, 10);
-
-    // 获取所有自选组合题
-    $baseQuestions = [];
-    foreach ($selectedCategories as $category) {
-        $stmt = $db->prepare("SELECT * FROM `questions` WHERE `category` = ? AND `category` != 'Etiquette'");
-        $stmt->execute([$category]);
-        $baseQuestions = array_merge($baseQuestions, $stmt->fetchAll(PDO::FETCH_ASSOC));
-    }
-
-    // 确保至少有 15 道自选组合题
-    if (count($baseQuestions) < 15) {
-        die('题库中的自选组合题数量不足。请立即通过管理邮箱报告此问题。');
-    }
-
-    // 随机抽取 15 道自选组合题
-    shuffle($baseQuestions);
-    $baseQuestions = array_slice($baseQuestions, 0, 15);
-
-    // 合并题目，确保基本礼仪题在前
-    $questions = array_merge($etiquetteQuestions, $baseQuestions);
-
-    // 更新用户开始时间
-    $stmt = $db->prepare("UPDATE `users` SET `start_time` = NOW() WHERE `id` = ?");
-    $stmt->execute([$userId]);
-
-    // 仅执行一次
-    $stmt->closeCursor();
-
-    // 开始HTML输出
 }
 ?>
 <!DOCTYPE html>
 <html lang="zh-CN">
 
 <head>
-  <meta charset="UTF-8">
-  <title>答卷 - 十八桥社区论坛入站测试系统</title>
-  <link rel="stylesheet" href="./vendor/twbs/bootstrap/dist/css/bootstrap.min.css">
-  <script>
-    function startTimer(duration, display) {
-      var timer = duration,
-        minutes, seconds;
-      setInterval(function() {
-        minutes = parseInt(timer / 60, 10);
-        seconds = parseInt(timer % 60, 10);
+    <meta charset="UTF-8">
+    <title>答卷 - 十八桥社区论坛入站测试系统</title>
+    <link rel="stylesheet" href="./vendor/twbs/bootstrap/dist/css/bootstrap.min.css">
+    <script>
+        function startTimer(duration, display) {
+            var timer = duration,
+                minutes, seconds;
+            setInterval(function() {
+                minutes = parseInt(timer / 60, 10);
+                seconds = parseInt(timer % 60, 10);
 
-        minutes = minutes < 10 ? "0" + minutes : minutes;
-        seconds = seconds < 10 ? "0" + seconds : seconds;
+                minutes = minutes < 10 ? "0" + minutes : minutes;
+                seconds = seconds < 10 ? "0" + seconds : seconds;
 
-        display.textContent = minutes + ":" + seconds;
+                display.textContent = minutes + ":" + seconds;
 
-        if (--timer < 0) {
-          document.getElementById("examForm").submit();
+                if (--timer < 0) {
+                    document.getElementById("examForm").submit();
+                }
+            }, 1000);
         }
-      }, 1000);
-    }
 
-    window.onload = function() {
-      var duration = <?php echo htmlspecialchars(EXAM_REMAIN_TIME); ?> * 60,
-        display = document.querySelector('#timer');
-      startTimer(duration, display);
-    };
-  </script>
+        window.onload = function() {
+            var duration = <?php echo htmlspecialchars(EXAM_REMAIN_TIME); ?> * 60,
+                display = document.querySelector('#timer');
+            startTimer(duration, display);
+        };
+    </script>
 </head>
 
 <?php
@@ -179,26 +179,26 @@ if (CLOSED) {
 ?>
 <h2>答卷 <span class="badge badge-secondary" id="timer"></span></h2>
 <table class="table table-bordered">
-  <thead>
-    <tr>
-      <th scope="col">用户 ID</th>
-      <th scope="col">登记用户名</th>
-      <th scope="col">电子邮件地址</th>
-      <th scope="col">基类组合</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th scope="row"><?php echo htmlspecialchars(isset($user['id']) ? $user['id'] : '错误：数据库返回了空值。请立即停止测试并通过管理邮箱报告此问题。', ENT_QUOTES, 'UTF-8'); ?></th>
-      <td><?php echo htmlspecialchars(isset($user['username']) ? $user['username'] : '错误：数据库返回了空值。请立即停止测试并通过管理邮箱报告此问题。', ENT_QUOTES, 'UTF-8'); ?></td>
-      <td><?php echo htmlspecialchars(isset($user['email']) ? $user['email'] : '错误：数据库返回了空值。请立即停止测试并通过管理邮箱报告此问题。', ENT_QUOTES, 'UTF-8'); ?></td>
-      <td><?php echo htmlspecialchars(isset($user['selected_categories']) ? $user['selected_categories'] : '错误：数据库返回了空值。请立即停止测试并通过管理邮箱报告此问题。', ENT_QUOTES, 'UTF-8'); ?></td>
-    </tr>
-  </tbody>
+    <thead>
+        <tr>
+            <th scope="col">用户 ID</th>
+            <th scope="col">登记用户名</th>
+            <th scope="col">电子邮件地址</th>
+            <th scope="col">基类组合</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <th scope="row"><?php echo htmlspecialchars(isset($user['id']) ? $user['id'] : '错误：数据库返回了空值。请立即停止测试并通过管理邮箱报告此问题。', ENT_QUOTES, 'UTF-8'); ?></th>
+            <td><?php echo htmlspecialchars(isset($user['username']) ? $user['username'] : '错误：数据库返回了空值。请立即停止测试并通过管理邮箱报告此问题。', ENT_QUOTES, 'UTF-8'); ?></td>
+            <td><?php echo htmlspecialchars(isset($user['email']) ? $user['email'] : '错误：数据库返回了空值。请立即停止测试并通过管理邮箱报告此问题。', ENT_QUOTES, 'UTF-8'); ?></td>
+            <td><?php echo htmlspecialchars(isset($user['selected_categories']) ? $user['selected_categories'] : '错误：数据库返回了空值。请立即停止测试并通过管理邮箱报告此问题。', ENT_QUOTES, 'UTF-8'); ?></td>
+        </tr>
+    </tbody>
 </table>
 
 <form id="examForm" action="result.php" method="post">
-  <?php
+    <?php
     $questionNumber = 1; // 初始化题号
     foreach ($questions as $question) {
         echo '
@@ -238,6 +238,6 @@ if (CLOSED) {
         $questionNumber++; // 增加题号
     }
     ?>
-  <button type="submit" class="btn btn-primary">提交</button>
+    <button type="submit" class="btn btn-primary">提交</button>
 </form>
 <?php require './views/footer.php'; ?>
