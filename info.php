@@ -40,25 +40,25 @@ if (CLOSED) {
                       <label for="categories">选择基类</label>
                       <div>
                           <div class="form-check">
-                              <input class="form-check-input" type="checkbox" name="categories[]" value="IT" id="category_IT" required>
+                              <input class="form-check-input" type="checkbox" name="categories[]" value="IT" id="category_IT">
                               <label class="form-check-label" for="category_IT">
                                   IT
                               </label>
                           </div>
                           <div class="form-check">
-                              <input class="form-check-input" type="checkbox" name="categories[]" value="ACGN" id="category_ACGN" required>
+                              <input class="form-check-input" type="checkbox" name="categories[]" value="ACGN" id="category_ACGN">
                               <label class="form-check-label" for="category_ACGN">
                                   ACGN
                               </label>
                           </div>
                           <div class="form-check">
-                              <input class="form-check-input" type="checkbox" name="categories[]" value="Virtual_Singer" id="category_Virtual_Singer" required>
+                              <input class="form-check-input" type="checkbox" name="categories[]" value="Virtual_Singer" id="category_Virtual_Singer">
                               <label class="form-check-label" for="category_Virtual_Singer">
                                   虚拟歌手
                               </label>
                           </div>
                           <div class="form-check">
-                              <input class="form-check-input" type="checkbox" name="categories[]" value="Broadcasting" id="category_Broadcasting" required>
+                              <input class="form-check-input" type="checkbox" name="categories[]" value="Broadcasting" id="category_Broadcasting">
                               <label class="form-check-label" for="category_Broadcasting">
                                   广播电视
                               </label>
