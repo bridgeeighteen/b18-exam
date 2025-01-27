@@ -127,7 +127,7 @@
 - [x] 支持单选/多选试题
 - [x] 支持多基类（分区）试题设置
 - [x] 时间作弊检测
-- [x] 自定义过关分数阈值、每题全对分数和多选题漏选分数
+- [x] 自定义测试时长、过关分数阈值、每题全对分数和多选题漏选分数
 - [x] 完美支持 Flarum 内置 API 接口和 FoF Doorman 插件自带 API 接口
 - [ ] 识别 Markdown 并自动录入试题
 
@@ -153,7 +153,7 @@
 <!-- 许可证 -->
 ## 许可证
 
-根据 LGPL-3.0+ 许可证分发。GPL-3.0 和 LGPL-3.0 的完整副本请见 [LICENSE](LICENSE)。
+根据 LGPL-3.0-or-later 许可证分发。LGPL-3.0 的完整副本请见 [LICENSE](LICENSE)，GPL-3.0 的完整副本请见 [LICENSE.GPL-3.0](LICENSE.GPL-3.0)。
 
 <p align="right">(<a href="#top">回到顶部</a>)</p>
 

@@ -20,7 +20,7 @@
                         <a class="nav-link" href="https://github.com/bridgeeighteen/b18-exam">源代码</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/admin/">管理（开发中）</a>
+                        <a class="nav-link" href="/admin/" disabled>管理（开发中）</a>
                     </li>
                 </ul>
             </div>
