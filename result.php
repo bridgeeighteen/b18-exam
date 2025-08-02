@@ -250,7 +250,7 @@ function getDoorKey($key)
     ];
 
     $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_POST, true); // 使用 true 而不是 1 为了增加可读性
+    curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -337,13 +337,13 @@ function generateInvitationCode($score)
                             <h5 class="card-title">测试失败。</h5>
                             <p class="card-subtitle">系统检测到你在测试过程中有作弊行为。</p>
                             <p class="card-text">如果对此结果有任何问题，请截屏此页面然后向<a
-                            href="mailto:admin@bridge18.rr.nu">管理邮箱</a>发送电子邮件。</p>
+                            href="javascript:location.href = 'mailto:' + ['<?php echo htmlspecialchars(ADMIN_EMAIL_NAME); ?>','<?php echo htmlspecialchars(ADMIN_EMAIL_DOMAIN); ?>'].join('@')">管理邮箱</a>发送电子邮件。</p>
                         <?php else: ?>
                             <h5 class="card-title">测试已完成。</h5>
                             <p class="card-subtitle">你的分数是：<strong><?php echo htmlspecialchars($score); ?></strong></p>
                             <p class="card-subtitle">你的邀请码是：<strong><?php echo htmlspecialchars(is_string($invitationCode) ? $invitationCode : '错误：返回内容的类型不是字符串。这有可能是邀请码 API 出现了错误，请截屏并联系管理邮箱获取邀请码。', ENT_QUOTES, 'UTF-8'); ?></strong></p>
                             <p class="card-text">如果对此结果有任何问题，请截屏此页面然后向<a
-                                    href="mailto:admin@bridge18.rr.nu">管理邮箱</a>发送电子邮件（被测试者 ID：<strong><?php echo htmlspecialchars(isset($userId) ? $userId : '', ENT_QUOTES, 'UTF-8'); ?></strong>）。</p>
+                                    href="javascript:location.href = 'mailto:' + ['<?php echo htmlspecialchars(ADMIN_EMAIL_NAME); ?>','<?php echo htmlspecialchars(ADMIN_EMAIL_DOMAIN); ?>'].join('@')">管理邮箱</a>发送电子邮件（被测试者 ID：<strong><?php echo htmlspecialchars(isset($userId) ? $userId : '', ENT_QUOTES, 'UTF-8'); ?></strong>）。</p>
                             <a href="https://www.bridge18.us.kg/" class="btn btn-primary" data-toggle="tooltip"
                                 data-placement="top" title="不要忘记写下（或安全地保存）邀请码，它只会出现一次！">去注册</a>
                         <?php endif; ?>

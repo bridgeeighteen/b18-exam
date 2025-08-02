@@ -68,7 +68,7 @@ if (CLOSED) {
                     </div>
                     <div class="form-group form-check">
                       <input type="checkbox" class="form-check-input" id="ruleCheck" required>
-                      <label class="form-check-label" for="ruleCheck">我已阅读<a href="https://www.bridge18.us.kg/p/3-code-of-user-conduct">用户行为准则</a>，并确认完全理解其内容。</label>
+                      <label class="form-check-label" for="ruleCheck">我已阅读<a href="<?php echo htmlspecialchars(CODE_OF_CONDUCT_URL); ?>">用户行为准则</a>，并确认完全理解其内容。</label>
                     </div>
                     <div class="form-group" id="turnstile"></div>
                     <button type="submit" class="btn btn-primary">开始测试</button>
