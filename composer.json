@@ -18,12 +18,7 @@
         "erusev/parsedown": "^1.7"
     },
     "require-dev": {
-        "phpro/grumphp": "^2.10",
-        "squizlabs/php_codesniffer": "*"
-    },
-    "config": {
-        "allow-plugins": {
-            "phpro/grumphp": true
-        }
+        "squizlabs/php_codesniffer": "*",
+        "friendsofphp/php-cs-fixer": "^3.64"
     }
 }
