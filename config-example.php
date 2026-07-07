@@ -3,26 +3,26 @@
 // 修改时确保只对 define 函数的第二个字符串参数作出修改，否则将导致系统无法获取配置。
 
 // 基础配置
-define('SITE', 'exam.bridge18.netlib.re'); // 部署系统的域名，部分场景下会使用
+define('SITE', 'exam.bridge18.qzz.io'); // 部署系统的域名，部分场景下会使用
 define('ADMIN_EMAIL_NAME', 'admin'); // 管理邮箱的用户名，也就是前半部分
 define('ADMIN_EMAIL_DOMAIN', 'example.com'); // 管理邮箱的域名，也就是后半部分
-define('ABOUT_URL', 'https://www.bridge18.netlib.re/d/1'); // 点击导航栏中的“关于”时会跳转到的链接。建议在论坛中开个专门帖子介绍论坛或者详细讲解入站测试的相关信息，然后在这里设置链接。
-define('CODE_OF_CONDUCT_URL', 'https://www.bridge18.netlib.re/p/3-code-of-user-conduct'); // 用户行为准则链接。可以使用 FoF Pages 插件创建单独页面存放内容，然后在这里设置链接。
+define('ABOUT_URL', 'https://bridge18.qzz.io/d/1'); // 点击导航栏中的“关于”时会跳转到的链接。建议在论坛中开个专门帖子介绍论坛或者详细讲解入站测试的相关信息，然后在这里设置链接。
+define('TOS_URL', 'https://bridge18.qzz.io/p/1-terms-of-service'); // 使用条款链接。可以使用 FoF Pages 插件创建单独页面存放内容，然后在这里设置链接。
 // 首页下部左侧的卡片是告示区，可以在这里放近期重要的动态。
-define('ANNOUCEMENT_TITLE', '滥用者正在猖獗，但我们坚守初心'); // 告示区标题
-define('ANNOUCEMENT_CONTENT', '半年过去了，由于滥用者的猖獗和某些代理节点维护者的所谓“省钱”，导致我们所依赖的服务发生了重大变化。但请放心，我们会以一贯初心继续社区的运营。'); // 告示区内容，建议 15 - 30 字。
+define('ANNOUCEMENT_TITLE', '不畏困境，终得光复'); // 告示区标题
+define('ANNOUCEMENT_CONTENT', '十八桥社区在 2025 年下旬遭受来自 FreeFlarum 无预警删除社区论坛的重创，此后陷入停摆。在社区创始人和云湖网友的共同努力下，我们得以重新站起，准备着为捍卫中文互联网的开放与包容继续奋斗。'); // 告示区内容，建议 15 - 30 字。
 define('ANNOUCEMENT_LINK', 'https://dvd.chat/notes/aauxksa5pc2jpyri'); // 告示区链接
 
-// MySQL 数据库配置
-define('DB_HOST', 'localhost:3306'); // 数据库主机
+// MySQL / MariaDB 数据库配置
+define('DB_HOST', 'localhost:3306'); // 数据库主机，如果运行在容器环境（如直接从 1Panel 应用商店安装的 PHP）应改为容器名
 define('DB_NAME', 'YOUR_DATABASE_NAME'); // 数据库名
 define('DB_USER', 'USERNAME'); // 数据库用户名
 define('DB_PASS', 'PASSWORD'); // 数据库密码
-define('DB_TIMEZONE_LOCK', false); // 数据库时区锁情况确认
+define('DB_TIMEZONE_LOCK', false); // 数据库时区锁情况确认，参见 README
 define('PHP_TIMEZONE', 'Asia/Shanghai'); // PHP 的时区（参见 https://www.php.net/manual/timezones.php）。为防止冲突，这里的时区应与你在导入数据库模板前在模板开头修改的时区一致。
 
 // API 配置
-define('API_SITE', 'www.bridge18.netlib.re'); // Flarum 站点域名
+define('API_SITE', 'bridge18.qzz.io'); // Flarum 站点域名
 define('API_X_CSRF_TOKEN', 'YOUR_API_X_CSRF_TOKEN'); // Flarum API 的令牌，直接从个人设置 -> 安全页面创建并获取
 
 // 测试配置
