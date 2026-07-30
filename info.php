@@ -1,5 +1,9 @@
 <?php 
 require 'config.php';
+require_once 'includes/security.php';
+
+initSecurity();
+sendSecurityHeaders();
 ?>
 
 <!DOCTYPE html>
@@ -26,17 +30,17 @@ if (CLOSED) {
                 <h2>信息登记</h2>
                 <h5>在正式开始测试前，请填写这些基本信息以便我们核查邀请码使用情况。请记住，将邀请码转让给他人是绝对禁止的，这会导致账号被封禁。</h5>
                 <form action="exam.php" method="post">
-                    <div class="form-group">
+                    <div class="mb-3">
                       <label for="InputUsername">用户名</label>
                       <input type="username" class="form-control" id="InputUsername" aria-describedby="usernameHelp" name="username" required>
                       <small id="usernameHelp" class="form-text text-muted">如果测试通过后想更换，可以在注册时填写。</small>
                     </div>
-                    <div class="form-group">
+                    <div class="mb-3">
                       <label for="InputEmail">电子邮件地址</label>
                       <input type="email" class="form-control" id="InputEmail" aria-describedby="emailHelp" name="email" required>
                       <small id="emailHelp" class="form-text text-muted">请一定确保这里的地址与注册的地址完全一致，否则账号将因被视为“邀请码滥用”遭到封禁。</small>
                     </div>
-                    <div class="form-group">
+                    <div class="mb-3">
                       <label for="categories">选择基类</label>
                       <div>
                           <div class="form-check">
@@ -66,11 +70,11 @@ if (CLOSED) {
                       </div>
                       <small id="categoriesHelp" class="form-text text-muted">社区将论坛目前规划的板块划分为以上四个基本类型，请从中选择两类作为自选试题的考查方向。</small>
                     </div>
-                    <div class="form-group form-check">
+                    <div class="mb-3 form-check">
                       <input type="checkbox" class="form-check-input" id="ruleCheck" required>
                       <label class="form-check-label" for="ruleCheck">我已阅读<a href="<?php echo htmlspecialchars(TOS_URL); ?>">使用条款</a>，并确认完全理解其内容。</label>
                     </div>
-                    <div class="form-group" id="turnstile"></div>
+                    <div class="mb-3" id="turnstile"></div>
                     <button type="submit" class="btn btn-primary">开始测试</button>
                     <script>
                       document.addEventListener('DOMContentLoaded', function() {

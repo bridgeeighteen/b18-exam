@@ -1,3 +1,9 @@
+<?php
+require_once __DIR__ . '/../includes/security.php';
+
+initSecurity();
+sendSecurityHeaders();
+?>
 <!DOCTYPE html>
 <html lang="zh-CN">
 
@@ -29,7 +35,7 @@
 </head>
 <?php require './views/nav.php'; ?>
 <form class="form-signin">
-    <h1 class="h3 mb-3 font-weight-normal">请登录</h1>
-    <a class="btn btn-lg btn-primary btn-block" type="submit" href="oauth.php">使用社区 OAuth 登录</a>
+    <h1 class="h3 mb-3 fw-normal">请登录</h1>
+    <a class="btn btn-lg btn-primary w-100" href="oauth.php">使用社区 OAuth 登录</a>
 </form>
 <?php require './views/footer.php'; ?>

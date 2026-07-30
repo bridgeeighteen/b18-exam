@@ -2,9 +2,16 @@
 
 require_once './includes/db.php';
 require_once './includes/version.php';
+require_once './includes/security.php';
+
+initSecurity();
 
 // Check if it's a POST request
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if (!validateCSRFToken($_POST['csrf_token'] ?? null)) {
+        http_response_code(403);
+        die('CSRF 验证失败。请刷新页面后重试。');
+    }
     $userId = $_POST['user_id'];
     $answers = $_POST;
 
@@ -314,6 +321,7 @@ function generateInvitationCode($score)
     return $code;
 }
 
+sendSecurityHeaders();
 ?>
 
 <!DOCTYPE html>
@@ -344,8 +352,8 @@ function generateInvitationCode($score)
                             <p class="card-subtitle">你的邀请码是：<strong><?php echo htmlspecialchars(is_string($invitationCode) ? $invitationCode : '错误：返回内容的类型不是字符串。这有可能是邀请码 API 出现了错误，请截屏并联系管理邮箱获取邀请码。', ENT_QUOTES, 'UTF-8'); ?></strong></p>
                             <p class="card-text">如果对此结果有任何问题，请截屏此页面然后向<a
                                     href="javascript:location.href = 'mailto:' + ['<?php echo htmlspecialchars(ADMIN_EMAIL_NAME); ?>','<?php echo htmlspecialchars(ADMIN_EMAIL_DOMAIN); ?>'].join('@')">管理邮箱</a>发送电子邮件（被测试者 ID：<strong><?php echo htmlspecialchars(isset($userId) ? $userId : '', ENT_QUOTES, 'UTF-8'); ?></strong>）。</p>
-                            <a href="https://www.bridge18.us.kg/" class="btn btn-primary" data-toggle="tooltip"
-                                data-placement="top" title="不要忘记写下（或安全地保存）邀请码，它只会出现一次！">去注册</a>
+<a href="https://www.bridge18.us.kg/" class="btn btn-primary" data-bs-toggle="tooltip"
+                            data-bs-placement="top" title="不要忘记写下（或安全地保存）邀请码，它只会出现一次！">去注册</a>
                         <?php endif; ?>
                     </div>
                 </div>

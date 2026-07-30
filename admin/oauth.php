@@ -1,8 +1,9 @@
 <?php
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../includes/security.php';
 require_once 'check_access.php';
 
-session_start();
+initSecurity();
 
 $api_site = API_SITE;
 $client_id = OAUTH_CLIENT_ID;

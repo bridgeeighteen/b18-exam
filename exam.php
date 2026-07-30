@@ -1,6 +1,9 @@
 <?php
 require_once 'config.php';
+require_once 'includes/security.php';
 require_once './vendor/autoload.php';
+
+initSecurity();
 
 if (DB_TIMEZONE_LOCK) {
 } else {
@@ -20,7 +23,7 @@ if (CLOSED) {
     } else {
         $secretKey = CF_TURNSTILE_SECRET;
         $turnstile = new Turnstile($secretKey);
-        $verifyResponse = $turnstile->verify($_POST['cf-turnstile-response'], $_SERVER['REMOTE_ADDR']);
+        $verifyResponse = $turnstile->verify($_POST['cf-turnstile-response'], getClientIP());
     }
 
     try {
@@ -138,6 +141,8 @@ if (CLOSED) {
         // 开始HTML输出
     }
 }
+
+sendSecurityHeaders();
 ?>
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -182,7 +187,7 @@ if (CLOSED) {
 } else {
 }
 ?>
-<h2>答卷 <span class="badge badge-secondary" id="timer"></span></h2>
+<h2>答卷 <span class="badge bg-secondary" id="timer"></span></h2>
 <table class="table table-bordered">
     <thead>
         <tr>
@@ -203,6 +208,7 @@ if (CLOSED) {
 </table>
 
 <form id="examForm" action="result.php" method="post">
+    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generateCSRFToken()); ?>">
     <?php
     $questionNumber = 1; // 初始化题号
     foreach ($questions as $question) {
