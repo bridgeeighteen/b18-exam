@@ -19,5 +19,13 @@
     "require-dev": {
         "squizlabs/php_codesniffer": "*",
         "friendsofphp/php-cs-fixer": "^3.64"
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "@php includes/fetch-fonts.php"
+        ],
+        "post-update-cmd": [
+            "@php includes/fetch-fonts.php"
+        ]
     }
 }

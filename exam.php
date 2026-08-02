@@ -151,6 +151,8 @@ sendSecurityHeaders();
     <meta charset="UTF-8">
     <title>答卷 - 十八桥社区论坛入站测试系统</title>
     <link rel="stylesheet" href="./vendor/twbs/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./views/assets/css/noto-face.css">
+    <link rel="stylesheet" href="./views/assets/css/tokens.css">
     <script>
         function startTimer(duration, display) {
             var timer = duration,
@@ -187,25 +189,38 @@ if (CLOSED) {
 } else {
 }
 ?>
-<h2>答卷 <span class="badge bg-secondary" id="timer"></span></h2>
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th scope="col">用户 ID</th>
-            <th scope="col">登记用户名</th>
-            <th scope="col">电子邮件地址</th>
-            <th scope="col">基类组合</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <th scope="row"><?php echo htmlspecialchars(isset($user['id']) ? $user['id'] : '错误：数据库返回了空值。请立即停止测试并通过管理邮箱报告此问题。', ENT_QUOTES, 'UTF-8'); ?></th>
-            <td><?php echo htmlspecialchars(isset($user['username']) ? $user['username'] : '错误：数据库返回了空值。请立即停止测试并通过管理邮箱报告此问题。', ENT_QUOTES, 'UTF-8'); ?></td>
-            <td><?php echo htmlspecialchars(isset($user['email']) ? $user['email'] : '错误：数据库返回了空值。请立即停止测试并通过管理邮箱报告此问题。', ENT_QUOTES, 'UTF-8'); ?></td>
-            <td><?php echo htmlspecialchars(isset($user['selected_categories']) ? $user['selected_categories'] : '错误：数据库返回了空值。请立即停止测试并通过管理邮箱报告此问题。', ENT_QUOTES, 'UTF-8'); ?></td>
-        </tr>
-    </tbody>
-</table>
+<div class="exam-bar">
+    <div class="container">
+        <div class="exam-bar-inner">
+            <h2 class="exam-title">答卷</h2>
+            <span class="badge bg-secondary" id="timer" role="timer" aria-label="剩余时间"></span>
+        </div>
+    </div>
+</div>
+<div class="page page-tight mx-auto">
+    <div class="card mb-4">
+        <div class="card-body">
+            <h3 class="section-head">测试信息</h3>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th scope="col">用户 ID</th>
+                        <th scope="col">登记用户名</th>
+                        <th scope="col">电子邮件地址</th>
+                        <th scope="col">基类组合</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <th scope="row"><?php echo htmlspecialchars(isset($user['id']) ? $user['id'] : '错误：数据库返回了空值。请立即停止测试并通过管理邮箱报告此问题。', ENT_QUOTES, 'UTF-8'); ?></th>
+                        <td><?php echo htmlspecialchars(isset($user['username']) ? $user['username'] : '错误：数据库返回了空值。请立即停止测试并通过管理邮箱报告此问题。', ENT_QUOTES, 'UTF-8'); ?></td>
+                        <td><?php echo htmlspecialchars(isset($user['email']) ? $user['email'] : '错误：数据库返回了空值。请立即停止测试并通过管理邮箱报告此问题。', ENT_QUOTES, 'UTF-8'); ?></td>
+                        <td><?php echo htmlspecialchars(isset($user['selected_categories']) ? $user['selected_categories'] : '错误：数据库返回了空值。请立即停止测试并通过管理邮箱报告此问题。', ENT_QUOTES, 'UTF-8'); ?></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 
 <form id="examForm" action="result.php" method="post">
     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generateCSRFToken()); ?>">
@@ -213,9 +228,9 @@ if (CLOSED) {
     $questionNumber = 1; // 初始化题号
     foreach ($questions as $question) {
         echo '
-                    <div class="card mb-3">
+                    <div class="card question-card">
                         <div class="card-body">
-                            <h5 class="card-title">' . htmlspecialchars($questionNumber) . '. ' . htmlspecialchars($question['question_text']) . '</h5>';
+                            <h5 class="question-text">' . htmlspecialchars($questionNumber) . '. ' . htmlspecialchars($question['question_text']) . '</h5>';
         echo '
                             <input type="hidden" name="user_id" value="' . htmlspecialchars(isset($user['id']) ? $user['id'] : '', ENT_QUOTES, 'UTF-8') . '">';
         echo '
@@ -249,6 +264,9 @@ if (CLOSED) {
         $questionNumber++; // 增加题号
     }
     ?>
-    <button type="submit" class="btn btn-primary">提交</button>
+    <div class="text-center">
+        <button type="submit" class="btn btn-primary btn-lg">提交</button>
+    </div>
 </form>
+</div>
 <?php require './views/footer.php'; ?>

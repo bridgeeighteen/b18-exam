@@ -1,4 +1,9 @@
 /vendor/
+/preview/
 node_modules/
+.playwright-cli/
+views/assets/fonts/
+views/assets/css/noto-face.css
 npm-debug.log
 yarn-error.log
+config.php

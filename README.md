@@ -1,7 +1,7 @@
 <div id="top"></div>
 
 <div align="center">
-  <a href="https://github.com/bridgeeighteen/b18-exam">
+  <a href="https://codeberg.org/bridgeeighteen/b18-exam">
     <img src="views/assets/logo_text.svg" alt="十八桥社区" height="60">
   </a>
 
@@ -11,15 +11,17 @@
     十八桥社区论坛使用的入站测试系统，基于 Bootstrap 和 PHP。
     <br />
     <br />
-    <a href="https://github.com/bridgeeighteen/b18-exam/issues">反馈 Bug</a>
+    <a href="https://codeberg.org/bridgeeighteen/b18-exam/issues">反馈 Bug</a>
     ·
-    <a href="https://github.com/bridgeeighteen/b18-exam/issues">请求新功能</a>
+    <a href="https://codeberg.org/bridgeeighteen/b18-exam/issues">请求新功能</a>
     <br />
     <br />
-    <img src="https://scrutinizer-ci.com/g/bridgeeighteen/b18-exam/badges/quality-score.png?b=main" alt=" Scrutinizer 分数">
-    <img src="https://img.shields.io/github/contributors/bridgeeighteen/b18-exam.svg" alt="贡献者总数">
-    <img src="https://img.shields.io/github/stars/bridgeeighteen/b18-exam.svg" alt="Stars 总数">
-    <img src="https://img.shields.io/github/issues/bridgeeighteen/b18-exam.svg" alt="Issues 总数">
+    <img src="https://scrutinizer-ci.com/g/bridgeeighteen/b18-exam/badges/quality-score.png?b=main" alt="Scrutinizer 分数">
+    <img src="https://img.shields.io/github/contributors/bridgeeighteen/b18-exam.svg" alt="GitHub 贡献者总数">
+    <img src="https://img.shields.io/gitea/pull-requests/all/bridgeeighteen/b18-exam?gitea_url=https%3A%2F%2Fcodeberg.org" alt="PR 总数">
+    <img src="https://img.shields.io/github/stars/bridgeeighteen/b18-exam.svg" alt="GitHub Stars 总数">
+    <img src="https://img.shields.io/gitea/stars/bridgeeighteen/b18-exam?gitea_url=https%3A%2F%2Fcodeberg.org" alt="Codeberg Stars 总数">
+    <img src="https://img.shields.io/gitea/issues/all/bridgeeighteen/b18-exam?gitea_url=https%3A%2F%2Fcodeberg.org" alt="Issues 总数">
     <img src="https://img.shields.io/packagist/v/bridgeeighteen/exam" alt="Composer 版本">
     <img src="https://img.shields.io/packagist/l/bridgeeighteen/exam" alt="许可证">
   </p>
@@ -60,7 +62,7 @@
 ### 构建工具
 
 * [Composer](https://getcomposer.org)
-* [Bootstrap 4.6](https://getbootstrap.com/docs/4.6/)
+* [Bootstrap](https://getbootstrap.com/)
 * [jQuery](https://jquery.com)
 
 <p align="right">(<a href="#top">回到顶部</a>)</p>
@@ -103,7 +105,7 @@
 2. 克隆本仓库。
 
    ```shell
-   git clone https://github.com/bridgeeighteen/b18-exam.git
+   git clone https://codeberg.org/bridgeeighteen/b18-exam.git
    ```
 
 3. 安装 Composer 依赖包。
@@ -131,7 +133,7 @@
 - [x] 完美支持 Flarum 内置 API 接口和 FoF Doorman 插件自带 API 接口
 - [ ] 识别 Markdown 并自动录入试题
 
-你也可以到 [Open Issues](https://github.com/bridgeeighteen/b18-exam/issues) 页查看所有请求的功能（以及已知的问题）。
+你也可以到 [Open Issues](https://codeberg.org/bridgeeighteen/b18-exam/issues) 页查看所有请求的功能（以及已知的问题）。
 
 <p align="right">(<a href="#top">回到顶部</a>)</p>
 
@@ -160,8 +162,8 @@
 <!-- 联系我们 -->
 ## 联系我们
 
-管理团队邮箱：admin@bridge18.rr.nu
+Matrix: [#community:millions.bridge18.qzz.io](https://matrix.to/#/#community:millions.bridge18.qzz.io)
 
-IRC 频道：irc://irc.libera.chat/#bridgeeighteen
+<!-- IRC 频道：irc://irc.libera.chat/#bridgeeighteen -->
 
 <p align="right">(<a href="#top">回到顶部</a>)</p>

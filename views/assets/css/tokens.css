@@ -1,0 +1,690 @@
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R4 V5
+ * Hallmark · genre: modern-minimal · macrostructure: Split Studio (index) / form-led column (app+admin)
+ * theme: custom · vibe: "calm crimson, restrained, welcoming" · paper: oklch(96% 0.008 20) · accent: oklch(42% 0.185 16)
+ * display: Noto Sans SC 900 · body: Noto Sans SC 400 · axes: light / geometric-sans / warm
+ * nav: N1 wordmark+hairline · footer: Ft2 inline · design-system: design.md · designed-as-app
+ * contrast: pass (40-41) · slop: pass (42-45) · honest: pass (46) · chrome: pass (47)
+ * tokens: pass (48) · responsive: pass (49) · mobile: pass (34, 50-57)
+ * studied: no · context: explicit · v1.1.0
+ */
+
+/* ---------- 1. Design tokens ---------- */
+
+:root {
+  /* brand pair (user-specified) */
+  --color-accent:     oklch(42% 0.185 16);  /* primary  #a70034 */
+  --color-accent-2:   oklch(63% 0.16 7);    /* secondary #ed556a */
+  --color-accent-ink: oklch(98% 0.008 20);
+  --color-accent-rgb: 167, 0, 52;           /* sRGB triplet of --color-accent (Bootstrap shadows) */
+  --color-focus:      oklch(45% 0.20 16);
+
+  /* warm-tinted neutrals */
+  --color-paper:    oklch(96% 0.008 20);
+  --color-paper-2:  oklch(93% 0.010 20);
+  --color-ink:      oklch(21% 0.012 20);
+  --color-ink-2:    oklch(40% 0.012 18);
+  --color-muted:    oklch(45% 0.012 18);
+  --color-rule:     oklch(86% 0.010 20);
+  --color-rule-2:   oklch(90% 0.010 20);
+
+  /* typography */
+  --font-body: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+
+  /* spacing — 4 pt scale */
+  --space-3xs: 0.25rem;
+  --space-2xs: 0.5rem;
+  --space-xs:  0.75rem;
+  --space-sm:  1rem;
+  --space-md:  1.5rem;
+  --space-lg:  2rem;
+  --space-xl:  3rem;
+  --space-2xl: 4.5rem;
+  --space-3xl: 7rem;
+
+  /* type scale */
+  --text-xs:   0.75rem;
+  --text-sm:   0.875rem;
+  --text-md:   1rem;
+  --text-lg:   1.25rem;
+  --text-xl:   1.5rem;
+  --text-2xl:  2rem;
+  --text-display: clamp(2rem, 4vw + 0.5rem, 3.25rem);
+
+  /* motion */
+  --dur-short: 200ms;
+  --dur-med:   320ms;
+  --ease-out:  cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* radii */
+  --radius-card: 1rem;
+  --radius-input: 0.625rem;
+  --radius-pill: 999px;
+}
+
+/* ---------- 2. Base ---------- */
+
+html,
+body {
+  overflow-x: clip;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--text-md);
+  line-height: 1.7;
+  color: var(--color-ink);
+  background-color: var(--color-paper);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-accent-2);
+  color: var(--color-accent-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: color var(--dur-short) var(--ease-out);
+}
+
+a:hover {
+  color: oklch(34% 0.18 16);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--color-ink);
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+/* ---------- 3. Navbar ---------- */
+
+.navbar {
+  background-color: var(--color-paper) !important;
+  border-bottom: 1px solid var(--color-rule);
+  padding-top: var(--space-sm);
+  padding-bottom: var(--space-sm);
+}
+
+.navbar .container {
+  max-width: 1080px;
+}
+
+.navbar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  font-weight: 700;
+  font-size: var(--text-md);
+  letter-spacing: -0.01em;
+  color: var(--color-ink) !important;
+}
+
+.navbar-brand img {
+  height: 22px;
+  width: auto;
+}
+
+.navbar-light .navbar-toggler {
+  border-color: var(--color-rule);
+  border-radius: var(--radius-input);
+}
+
+.navbar-light .navbar-toggler-icon {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='oklch(40%200.012 18)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+.navbar-nav .nav-link {
+  font-weight: 500;
+  color: var(--color-ink-2) !important;
+  padding-inline: var(--space-sm);
+  transition: color var(--dur-short) var(--ease-out);
+}
+
+.navbar-nav .nav-link:hover {
+  color: var(--color-accent) !important;
+  text-decoration: none;
+}
+
+.navbar-nav .nav-link:focus-visible {
+  border-radius: var(--radius-input);
+}
+
+@media (max-width: 991.98px) {
+  .navbar-collapse {
+    border-top: 1px solid var(--color-rule-2);
+    margin-top: var(--space-sm);
+    padding-top: var(--space-xs);
+  }
+}
+
+/* ---------- 4. Buttons ---------- */
+
+.btn {
+  font-weight: 500;
+  border-radius: var(--radius-pill);
+  padding: 0.5rem 1.75rem;
+  transition: background-color var(--dur-short) var(--ease-out),
+              border-color var(--dur-short) var(--ease-out),
+              color var(--dur-short) var(--ease-out);
+}
+
+.btn-primary {
+  --bs-btn-bg: var(--color-accent);
+  --bs-btn-border-color: var(--color-accent);
+  --bs-btn-color: var(--color-accent-ink);
+  --bs-btn-hover-bg: oklch(35% 0.18 16);
+  --bs-btn-hover-border-color: oklch(35% 0.18 16);
+  --bs-btn-hover-color: var(--color-accent-ink);
+  --bs-btn-active-bg: oklch(30% 0.17 16);
+  --bs-btn-active-border-color: oklch(30% 0.17 16);
+  --bs-btn-active-color: var(--color-accent-ink);
+  --bs-btn-focus-shadow-rgb: var(--color-accent-rgb);
+}
+
+.btn-primary:disabled,
+.btn-primary.disabled {
+  background-color: var(--color-paper-2);
+  border-color: var(--color-paper-2);
+  color: var(--color-muted);
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--color-accent);
+  --bs-btn-border-color: var(--color-rule);
+  --bs-btn-hover-color: var(--color-accent);
+  --bs-btn-hover-bg: color-mix(in oklab, var(--color-accent-2) 12%, transparent);
+  --bs-btn-hover-border-color: var(--color-accent-2);
+  --bs-btn-active-color: var(--color-accent);
+  --bs-btn-active-bg: color-mix(in oklab, var(--color-accent-2) 18%, transparent);
+  --bs-btn-active-border-color: var(--color-accent-2);
+  border-width: 1.5px;
+}
+
+.btn-lg {
+  padding: 0.75rem 2.25rem;
+  font-size: var(--text-lg);
+}
+
+.btn-primary:focus-visible,
+.btn-outline-primary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-focus);
+}
+
+/* ---------- 5. Cards ---------- */
+
+.card {
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-card);
+  background-color: var(--color-paper);
+}
+
+.card-body {
+  padding: var(--space-lg);
+}
+
+.card-title {
+  font-weight: 700;
+}
+
+.card-text {
+  color: var(--color-ink-2);
+}
+
+/* ---------- 6. Forms ---------- */
+
+.form-label {
+  font-weight: 600;
+  color: var(--color-ink);
+  margin-bottom: var(--space-2xs);
+}
+
+.form-control {
+  border: 1.5px solid var(--color-rule);
+  border-radius: var(--radius-input);
+  padding: 0.75rem 1rem;
+  font-weight: 400;
+  color: var(--color-ink);
+  background-color: var(--color-paper);
+  transition: border-color var(--dur-short) var(--ease-out);
+}
+
+.form-control::placeholder {
+  color: var(--color-muted);
+}
+
+.form-control:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-accent-2) 30%, transparent);
+  background-color: var(--color-paper);
+}
+
+.form-control:focus-visible {
+  outline: none;
+}
+
+.form-text {
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  margin-top: var(--space-2xs);
+}
+
+.form-check {
+  min-height: 1.5rem;
+}
+
+.form-check-input {
+  border: 1.5px solid var(--color-rule);
+  background-color: var(--color-paper);
+}
+
+.form-check-input:checked {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.form-check-input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-accent-2) 30%, transparent);
+}
+
+.form-check-input:focus-visible {
+  outline: none;
+}
+
+/* Base-category chips — visually-hidden input, chip-shaped label */
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+
+.chip {
+  position: relative;
+}
+
+.chip input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.chip label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1.5rem;
+  border: 1.5px solid var(--color-rule);
+  border-radius: var(--radius-pill);
+  font-weight: 500;
+  color: var(--color-ink-2);
+  background-color: var(--color-paper);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: border-color var(--dur-short) var(--ease-out),
+              background-color var(--dur-short) var(--ease-out),
+              color var(--dur-short) var(--ease-out),
+              box-shadow var(--dur-short) var(--ease-out);
+}
+
+.chip label:hover {
+  border-color: var(--color-accent-2);
+  color: var(--color-ink);
+}
+
+.chip input:checked + label {
+  border-color: var(--color-accent);
+  background-color: color-mix(in oklab, var(--color-accent-2) 14%, var(--color-paper));
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.chip input:focus-visible + label {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-focus);
+}
+
+/* ---------- 7. Alerts ---------- */
+
+.alert {
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-card);
+  font-size: var(--text-sm);
+}
+
+.alert-warning {
+  background-color: color-mix(in oklab, var(--color-accent-2) 8%, var(--color-paper));
+  border-color: color-mix(in oklab, var(--color-accent-2) 30%, transparent);
+  color: var(--color-ink);
+}
+
+.alert-danger {
+  background-color: color-mix(in oklab, var(--color-accent-2) 10%, var(--color-paper));
+  border-color: color-mix(in oklab, var(--color-accent-2) 35%, transparent);
+  color: var(--color-ink);
+}
+
+.alert-primary {
+  background-color: color-mix(in oklab, var(--color-accent-2) 8%, var(--color-paper));
+  border-color: color-mix(in oklab, var(--color-accent-2) 30%, transparent);
+  color: var(--color-ink);
+}
+
+/* ---------- 8. Badge / timer pill ---------- */
+
+.badge.bg-secondary,
+.timer-pill {
+  background-color: var(--color-accent) !important;
+  color: var(--color-accent-ink);
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  font-size: var(--text-lg);
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  padding: 0.5rem 1.25rem;
+  vertical-align: middle;
+  display: inline-block;
+  min-width: 5.5rem;
+  text-align: center;
+}
+
+/* ---------- 9. Table (exam identity strip) ---------- */
+
+.table {
+  --bs-table-border-color: var(--color-rule-2);
+  color: var(--color-ink);
+}
+
+.table > :not(caption) > * > * {
+  padding: var(--space-sm) var(--space-md);
+  border-bottom-width: 1px;
+  vertical-align: middle;
+}
+
+.table thead th {
+  background-color: var(--color-paper-2);
+  font-weight: 600;
+  color: var(--color-ink);
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.table th[scope="row"] {
+  font-weight: 600;
+}
+
+/* ---------- 10. Page shells ---------- */
+
+.page {
+  padding-top: var(--space-xl);
+  padding-bottom: var(--space-3xl);
+}
+
+.page-narrow {
+  max-width: 42rem;
+}
+
+.page-tight {
+  max-width: 54rem;
+}
+
+.page-title {
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: var(--space-xs);
+}
+
+.page-subtitle {
+  color: var(--color-ink-2);
+  font-size: var(--text-lg);
+  max-width: 56ch;
+}
+
+.section-gap {
+  margin-top: var(--space-3xl);
+}
+
+.section-head {
+  font-size: var(--text-xl);
+  font-weight: 800;
+  margin-bottom: var(--space-md);
+}
+
+/* ---------- 11. Hero (index.php — Split Studio) ---------- */
+
+.hero {
+  padding-top: var(--space-xl);
+  padding-bottom: var(--space-2xl);
+}
+
+.hero-title {
+  font-size: var(--text-display);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin-bottom: var(--space-md);
+}
+
+.hero-lead {
+  font-size: var(--text-lg);
+  color: var(--color-ink-2);
+  max-width: 48ch;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  align-items: center;
+  margin-top: var(--space-lg);
+}
+
+.hero-note {
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+  margin-top: var(--space-sm);
+  max-width: 46ch;
+}
+
+.support-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.support-card .card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.support-card .card-text {
+  flex-grow: 1;
+}
+
+/* ---------- 12. Form card (info.php) ---------- */
+
+.form-card {
+  max-width: 42rem;
+  margin-inline: auto;
+}
+
+.form-card .card-body {
+  padding: var(--space-xl);
+}
+
+.form-section {
+  margin-bottom: var(--space-md);
+}
+
+/* ---------- 13. Exam page ---------- */
+
+.exam-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+  background-color: color-mix(in oklab, var(--color-paper) 92%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--color-rule-2);
+  padding-top: var(--space-sm);
+  padding-bottom: var(--space-sm);
+}
+
+.exam-bar-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.exam-title {
+  font-size: var(--text-xl);
+  font-weight: 800;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.question-card {
+  margin-bottom: var(--space-md);
+}
+
+.question-card .card-body {
+  padding: var(--space-lg);
+}
+
+.question-text {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  letter-spacing: 0;
+  margin-bottom: var(--space-md);
+}
+
+.question-card .form-check {
+  padding-left: 2.25rem;
+  margin-bottom: var(--space-2xs);
+}
+
+.question-card .form-check-label {
+  color: var(--color-ink-2);
+  cursor: pointer;
+}
+
+.question-card .form-check-input {
+  margin-top: 0.25rem;
+  margin-left: -2.25rem;
+}
+
+/* ---------- 14. Result page ---------- */
+
+.result-card {
+  max-width: 40rem;
+  margin-inline: auto;
+  text-align: center;
+}
+
+.code-box {
+  background-color: var(--color-paper-2);
+  border: 1px solid var(--color-rule);
+  border-left: 4px solid var(--color-accent);
+  border-radius: var(--radius-card);
+  padding: var(--space-md) var(--space-lg);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+  min-width: 0;
+  margin: var(--space-md) 0;
+}
+
+.result-meta {
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+
+/* ---------- 15. Footer ---------- */
+
+.site-footer {
+  border-top: 1px solid var(--color-rule);
+  padding-top: var(--space-md);
+  padding-bottom: var(--space-lg);
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+.site-footer a {
+  color: var(--color-ink-2);
+}
+
+/* ---------- 16. Responsive discipline ---------- */
+
+@media (max-width: 991.98px) {
+  .hero {
+    padding-top: var(--space-lg);
+    padding-bottom: var(--space-xl);
+  }
+
+  .hero-actions .btn {
+    width: 100%;
+  }
+
+  .page {
+    padding-top: var(--space-lg);
+    padding-bottom: var(--space-xl);
+  }
+
+  .support-card {
+    height: auto;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .form-card .card-body {
+    padding: var(--space-lg);
+  }
+
+  .question-card .card-body {
+    padding: var(--space-md);
+  }
+
+  .chip label {
+    padding: 0.375rem 1rem;
+  }
+
+  .btn-lg {
+    padding-inline: 1.25rem;
+    font-size: var(--text-md);
+    white-space: nowrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
