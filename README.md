@@ -81,10 +81,13 @@
 * 已经部署好的 Flarum
   * [FoF Doorman 插件](https://github.com/FriendsOfFlarum/doorman)
   * [OAuth Center 插件](https://github.com/FoskyM/flarum-oauth-center)
+* 已经部署好的 Matrix 实例（可选，用于注册“千万桥”的测试通道）
+  * [Matrix Authentication Service](https://github.com/element-hq/matrix-authentication-service)
+  * 启用 MAS 的 `adminapi` 资源，并准备一个具有 `urn:mas:admin` 作用域的个人访问令牌
 
 ### 正常安装（生产环境推荐）
 
-1. 在 [Cloudflare 仪表板](https://dash.cloudflare.com/)中获取 Turnstile 的密钥（测试用途不需要），然后去 Flarum 的个人主页获取 API 密钥。同时，你需要在 Flarum 中利用 OAuth Center 插件的管理面板创建一个新的应用，先复制（或记下）插件自动生成的 ID 和私钥，然后依需要填写其余内容。回调地址填 `https://你的部署网站/admin/oauth.php`。
+1. 在 [Cloudflare 仪表板](https://dash.cloudflare.com/)中获取 Turnstile 的密钥（测试用途不需要），然后去 Flarum 的个人主页获取 API 密钥。同时，你需要在 Flarum 中利用 OAuth Center 插件的管理面板创建一个新的应用，先复制（或记下）插件自动生成的 ID 和私钥，然后依需要填写其余内容。回调地址填 `https://你的部署网站/admin/oauth.php`。如果还要启用“论坛账号登录免考礼仪测试”功能，需要再创建一个应用用于用户免考流程，回调地址填 `https://你的部署网站/oauth-forum.php`，并将其 ID 和私钥填入 `FORUM_OAUTH_CLIENT_ID` 与 `FORUM_OAUTH_CLIENT_SECRET` 配置项（详见下文「配置 OAuth 免考」）。
 
 2. 通过 Composer 创建新项目。这里的 `my-new-project` 可以根据实际需要更换。
 
@@ -96,11 +99,11 @@
 
 4. 使用 phpMyAdmin 等导入 `table.sql` 中定义的数据表及结构。导入前先在该文件的 `SET time_zone = "+08:00";` 一行中按照通用表示修改时区，然后到第 3 步设置的配置文件中找到 `PHP_TIMEZONE` 变量，按照其后的注释以 PHP 支持的格式同步修改。管理者在中国大陆的无需改动，在中国港澳台地区的需要修改 PHP 时区为本地时区。有些托管平台设置了时区锁，无论怎么改时区 `SELECT @@global.time_zone, @@session.time_zone;` 的查询结果均为 `SYSTEM`。遇到这种情况，请将 `DB_TIMEZONE_LOCK` 变量设置为 `true`。
 
-5. 在 `questions` 表中手工录入试题。在后续版本中，可以通过管理面板导入 Markdown 试题，由系统自动识别并录入。
+5. 在 `questions` 表中手工录入试题，或通过管理面板（`/admin/`）在「题目管理」中录入或导入 Markdown 试题（详见下文「管理面板」）。
 
 ### 使用 Git 克隆安装
 
-1. 在 [Cloudflare 仪表板](https://dash.cloudflare.com/)中获取 Turnstile 的密钥（测试用途不需要），然后去 Flarum 的个人主页获取 API 密钥。同时，你需要在 Flarum 中利用 OAuth Center 插件的管理面板创建一个新的应用，先复制（或记下）插件自动生成的 ID 和私钥，然后依需要填写其余内容。回调地址填 `https://你的部署网站/admin/oauth.php`。
+1. 在 [Cloudflare 仪表板](https://dash.cloudflare.com/)中获取 Turnstile 的密钥（测试用途不需要），然后去 Flarum 的个人主页获取 API 密钥。同时，你需要在 Flarum 中利用 OAuth Center 插件的管理面板创建一个新的应用，先复制（或记下）插件自动生成的 ID 和私钥，然后依需要填写其余内容。回调地址填 `https://你的部署网站/admin/oauth.php`。如果还要启用“论坛账号登录免考礼仪测试”功能，需要再创建一个应用用于用户免考流程，回调地址填 `https://你的部署网站/oauth-forum.php`，并将其 ID 和私钥填入 `FORUM_OAUTH_CLIENT_ID` 与 `FORUM_OAUTH_CLIENT_SECRET` 配置项（详见下文「配置 OAuth 免考」）。
 
 2. 克隆本仓库。
 
@@ -118,7 +121,247 @@
 
 5. 使用 phpMyAdmin 等导入 `table.sql` 中定义的数据表及结构。导入前先在该文件的 `SET time_zone = "+08:00";` 一行中按照通用表示修改时区，然后到第 3 步设置的配置文件中找到 `PHP_TIMEZONE` 变量，按照其后的注释以 PHP 支持的格式同步修改。管理者在中国大陆的无需改动，在中国港澳台地区的需要修改 PHP 时区为本地时区。有些托管平台设置了时区锁，无论怎么改时区 `SELECT @@global.time_zone, @@session.time_zone;` 的查询结果均为 `SYSTEM`。遇到这种情况，请将 `DB_TIMEZONE_LOCK` 变量设置为 `true`。
 
-6. 在 `questions` 表中手工录入试题。在后续版本中，可以通过管理面板导入 Markdown 试题，由系统自动识别并录入。
+6. 在 `questions` 表中手工录入试题，或通过管理面板（`/admin/`）在「题目管理」中录入或导入 Markdown 试题（详见下文「管理面板」）。
+
+### 从旧版本升级（v1.0.x → v1.1.0）
+
+如果此前已经部署过本系统，请手动执行以下 SQL 以补齐 v1.1.0 新增的数据结构（`questions.author` 为 Markdown 导入所需的命题人字段）：
+
+```sql
+ALTER TABLE `questions`
+  ADD COLUMN `author` varchar(100) NOT NULL DEFAULT '' COMMENT '命题人' AFTER `type`;
+
+CREATE TABLE `api_keys` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) NOT NULL,
+  `key_hash` char(64) NOT NULL COMMENT '密钥的 SHA-256 哈希，明文只在创建时显示一次',
+  `scopes` varchar(255) NOT NULL COMMENT '逗号分隔的作用域列表',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `expires_at` timestamp NULL DEFAULT NULL,
+  `last_used_at` timestamp NULL DEFAULT NULL,
+  `enabled` tinyint(1) NOT NULL DEFAULT '1',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `key_hash` (`key_hash`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `audit_log` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `actor` varchar(255) NOT NULL COMMENT '操作者标识（管理员身份或 API 密钥名称）',
+  `action` varchar(50) NOT NULL COMMENT '操作类型',
+  `target` varchar(255) DEFAULT NULL COMMENT '操作目标',
+  `detail` text COMMENT '补充信息（JSON）',
+  `ip` varchar(64) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `actor` (`actor`),
+  KEY `action` (`action`),
+  KEY `created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `api_rate_limits` (
+  `bucket` varchar(128) NOT NULL COMMENT '限流桶，如 ip:1.2.3.4 或 key:1',
+  `window_start` int NOT NULL COMMENT '窗口起始时间（Unix 秒）',
+  `count` int NOT NULL DEFAULT '1',
+  PRIMARY KEY (`bucket`),
+  KEY `window_start` (`window_start`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+### 从旧版本升级（v1.1.0 → v1.2.0）
+
+v1.2.0 引入了持久化试卷表 `exam_papers`（答题页与系统 API 共用，用于保证交卷按出卷题目计分、免考状态由服务端记录）。请手动执行以下 SQL：
+
+```sql
+CREATE TABLE `exam_papers` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `channel` enum('forum','matrix') NOT NULL,
+  `candidate_id` int NOT NULL,
+  `question_ids` text NOT NULL COMMENT '试卷题目 ID 列表（JSON 数组，按出卷顺序）',
+  `etiquette_exempt` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否礼仪题免考',
+  `etiquette_exempt_ids` text COMMENT '免考礼仪题 ID 列表（JSON 数组）',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `channel_candidate` (`channel`,`candidate_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+同时，系统 API 已从 `?resource=&action=` 调用方式迁移为 RESTful 风格（`/api/v1/...`），详见下文「系统 API」。`api/index.php` 不再接受旧的 `resource` / `action` 参数。`.htaccess` 已包含 `/api/v1/` 的重写规则；若使用 Nginx，请将 `/api/v1/(.*)` 重写为 `api/index.php?path=/v1/$1`，或将请求直接指向 `api/index.php/v1/...`（PATH_INFO 方式）。
+
+### 配置“千万桥”测试通道（可选）
+
+如果你需要让用户通过本系统获得“千万桥”等 Matrix 实例的注册 Token，请按照以下步骤操作。
+
+1. 在 Matrix Authentication Service 的配置文件中启用管理 API。在 `http.listeners` 中添加 `adminapi` 资源（参见 [Use the Admin API](https://element-hq.github.io/matrix-authentication-service/topics/admin-api.html)）：
+
+   ```yaml
+   http:
+     listeners:
+       - name: web
+         resources:
+           # 其他公共资源
+           - name: discovery
+           # …
+           - name: adminapi
+         binds:
+           - address: "[::]:8080"
+   ```
+
+2. 准备一个具有 `urn:mas:admin` 作用域的个人访问令牌，用于操作 MAS 管理 API。你可以使用 MAS 提供的[脚本](https://github.com/element-hq/matrix-authentication-service/blob/main/misc/device-code-grant.sh)以设备授权流程交互式获取，或通过管理员 API 的 `POST /api/admin/v1/personal-sessions` 接口签发。
+
+3. 在 `config.php` 中填写 `MATRIX_ENABLED`、`MATRIX_INSTANCE_NAME`、`MATRIX_API_SITE`、`MATRIX_API_TOKEN`、`MATRIX_REGISTER_URL`、`MATRIX_TOS_URL` 等配置项，并按需调整礼仪测试的题目数量、通过分数阈值与计分配置。
+
+4. 重新导入 `table.sql` 以创建 `matrix_users` 与 `matrix_results` 两张独立的数据表（礼仪测试的结果不会与论坛测试的结果混用）。
+
+注意：`MATRIX_API_TOKEN` 为敏感信息，请妥善保管，不要提交到源代码仓库。
+
+### 配置 OAuth 免考（可选）
+
+本系统支持两条 OAuth 免考通道，让已拥有对应平台账号的用户免考基本礼仪题：
+
+- **Matrix 账号免考论坛测试**：用户在 Matrix Authentication Service（MAS）上登录自己的 Matrix 账号后，注册论坛时的入站测试将不包含基本礼仪题，该部分直接获得满分（`users` 表中的 `matrix_oauth_mxid` 注解会记录其 Matrix 用户 ID）。
+- **论坛账号免考 Matrix 测试**：用户登录自己的论坛账号后，注册 Matrix 实例时免考礼仪测试并直接获得满分，系统随即发放注册 Token（`matrix_users` 表中的 `forum_oauth_user_id` 注解会记录其论坛用户 ID）。
+
+两条通道均使用 OAuth 2.0 授权码流程（含 `state` 防 CSRF 校验；MAS 通道额外使用 PKCE），且登记信息中的电子邮件地址必须与 OAuth 验证到的账号所绑定邮箱完全一致，否则免考不生效，按正常测试流程进行。
+
+#### 配置论坛账号免考（Flarum 提供方）
+
+1. 在 Flarum 的 OAuth Center 插件管理面板中创建一个新的应用（不要与管理员登录应用混用），回调地址填 `https://你的部署网站/oauth-forum.php`，作用域选择默认的 `user.read`。
+2. 将自动生成的 ID 和私钥分别填入 `config.php` 中的 `FORUM_OAUTH_CLIENT_ID` 与 `FORUM_OAUTH_CLIENT_SECRET`，并将 `FORUM_OAUTH_ENABLED` 设置为 `true`。
+
+#### 配置 Matrix 账号免考（MAS 提供方）
+
+1. 在 MAS 配置文件的 `oauth.clients` 中静态注册一个客户端（参见 [OAuth 2.0 scopes](https://element-hq.github.io/matrix-authentication-service/reference/scopes.html) 与 [Authorization and sessions](https://element-hq.github.io/matrix-authentication-service/topics/authorization.html)），大致如下：
+
+   ```yaml
+   oauth:
+     clients:
+       - client_id: "exam-oauth"
+         client_auth_method: client_secret_basic
+         client_secret: "…"
+         redirect_uris:
+           - "https://你的部署网站/oauth-matrix.php"
+         grant_types:
+           - authorization_code
+         scope: "openid email"
+   ```
+
+2. 将客户端 ID 和私钥分别填入 `config.php` 中的 `MAS_OAUTH_CLIENT_ID` 与 `MAS_OAUTH_CLIENT_SECRET`，并将 `MAS_OAUTH_ENABLED` 设置为 `true`。OAuth 端点（`/authorize`、`/oauth2/token`、`/oauth2/userinfo`）与注册 Token 管理 API 共用 `MATRIX_API_SITE` 地址。
+
+3. 重新导入 `table.sql` 以在 `users` 与 `matrix_users` 表中创建免考注解字段（`matrix_oauth_mxid`、`matrix_oauth_verified_at`、`forum_oauth_user_id`、`forum_oauth_verified_at`）。
+
+如果 `FORUM_OAUTH_ENABLED` 或 `MAS_OAUTH_ENABLED` 为 `false`（或未填写有效客户端凭据），对应的免考入口不会在信息登记页面显示。
+
+### 管理面板
+
+管理面板位于 `/admin/`，包含数据统计、测试信息、题目管理（手动录入 / Markdown 导入 / 导出）、API 密钥管理与审计日志。
+
+#### 访问权限
+
+管理面板只能通过 OAuth 登录访问：
+
+- **使用社区论坛登录**：需同时满足以下两个条件（缺一不可）：
+  1. 论坛账号属于 `ADMIN_GROUP_ID`（默认 `1`，即论坛管理员组）对应的用户组；
+  2. 在登录后的验证页面填写的千万桥（MAS）用户名具备 `admin` 属性（通过 MAS 管理 API 校验）。
+- **使用千万桥登录**：仅需满足千万桥账号具备 `admin` 属性（需将 `ADMIN_MAS_OAUTH_ENABLED` 设为 `true`，并确保 MAS 的 OAuth 客户端已追加回调地址 `https://你的部署网站/admin/oauth-matrix.php`）。
+
+任何校验失败都会拒绝访问（fail-closed）。登录会话默认有效期为 120 分钟（`ADMIN_SESSION_LIFETIME`）。
+
+#### Markdown 导入格式
+
+在「题目管理 → Markdown 导入」中先选择目标分类，然后粘贴如下格式的表格（表头顺序可任意，多余列会被忽略）：
+
+```markdown
+| 题干 | A | B | C | D | 答案 | 类型 | 命题人 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 题目内容 | 选项 A | 选项 B | 选项 C | 选项 D | A | single | 张三 |
+| 多选题示例 | 甲 | 乙 | 丙 | 丁 | AB | multiple | |
+```
+
+- 答案：单选填单个字母（如 `A`），多选填字母组合（如 `AB` 或 `A,B`）；
+- 类型：`single`（单选）或 `multiple`（多选）；
+- 命题人可留空；分类列可选（若表格含「分类」列则优先使用表格中的值）。
+
+#### 系统 API
+
+系统提供统一的 RESTful JSON API（`/api/v1/...`），覆盖管理端的数据统计、题目管理、测试记录、用户、API 密钥与审计日志，以及完整的入站测试流程（候选人登记、试卷获取、交卷计分与邀请码 / 注册 Token 发放）。API 供外部工具（如论坛机器人、监控服务）与管理面板共用。
+
+**文档**：完整的 API 文档已独立成册 —— 人读指南见 [`docs/api.md`](docs/api.md)（认证、作用域、端点参考、示例与集成场景），机器可读规范见 [`docs/api/openapi.yaml`](docs/api/openapi.yaml)（OpenAPI 3.0，可用 Swagger UI / Redoc 渲染）。
+
+**快速上手**：
+
+- 认证：`Authorization: Bearer <密钥>`（管理面板创建，明文只显示一次），或已登录的管理员会话（写操作需携带 `X-CSRF-Token` 请求头）；
+- API 仅接受 HTTPS（本机回环地址除外），按 IP 与密钥限流，写操作写入审计日志；
+- 响应统一为 `{"ok":true,"data":...}` / `{"ok":false,"data":{"error":{"code":...,"message":...}}}`；
+- 列表接口支持 `page` / `per_page` 分页并附带 RFC 5988 `Link` 响应头。
+
+**支持的作用域**：
+
+| 作用域 | 说明 |
+| --- | --- |
+| `stats:read` | 数据统计（只读） |
+| `questions:read` / `questions:write` | 题目查询 / 增删改导入导出 |
+| `results:read` / `results:write` | 测试记录查询 / 删除 |
+| `users:read` | 用户列表与详情 |
+| `keys:admin` | API 密钥与审计日志管理 |
+| `system:read` | 系统信息（只读） |
+| `exam:read` / `exam:write` | 考试流程：试卷与候选人查询 / 登记、交卷与删除 |
+
+**端点一览**（完整参数与示例见 [`docs/api.md`](docs/api.md)）：
+
+| 方法与路径 | 说明 |
+| --- | --- |
+| `GET /api/v1/health` · `GET /api/v1/meta` | 健康检查 / 公共元数据（免认证） |
+| `GET /api/v1/stats` | 统计摘要 |
+| `GET /api/v1/questions` · `POST /api/v1/questions` | 题目列表（筛选 `category` / `type` / `q`）/ 新建 |
+| `GET /api/v1/questions/{id}` · `PUT /api/v1/questions/{id}` · `DELETE /api/v1/questions/{id}` | 题目详情 / 更新 / 删除 |
+| `POST /api/v1/questions/import` · `GET /api/v1/questions/export` | Markdown 表格导入（`dry_run` 预览）/ 导出 |
+| `GET /api/v1/results` · `GET /api/v1/results/{id}` · `DELETE /api/v1/results/{id}` | 测试记录列表 / 详情 / 删除（筛选 `channel` / `status` / `date_from` / `date_to`） |
+| `GET /api/v1/users` · `GET /api/v1/users/{id}` · `DELETE /api/v1/users/{id}` | 用户列表（含登记日期筛选）/ 详情 / 删除（记录级联删除） |
+| `GET /api/v1/keys` · `POST /api/v1/keys` · `PATCH /api/v1/keys/{id}` · `DELETE /api/v1/keys/{id}` | API 密钥管理（`PATCH` 请求体 `{"enabled":true\|false}` 启停用） |
+| `GET /api/v1/audit` | 审计日志（筛选 `q` / `action` / `date_from` / `date_to`） |
+| `GET /api/v1/system` | 系统信息（只读） |
+| `GET /api/v1/candidates` · `GET /api/v1/candidates/{id}` · `DELETE /api/v1/candidates/{id}` | 候选人列表（状态 `registered` / `paper_generated` / `submitted`）/ 详情（含试卷与凭据）/ 删除 |
+| `POST /api/v1/candidates` | 登记候选人并生成试卷（请求体 `channel` 为 `forum` 或 `matrix`） |
+| `GET /api/v1/candidates/{id}/paper?channel=forum` | 获取已生成的试卷（题目不含答案） |
+| `POST /api/v1/candidates/{id}/submissions` | 交卷计分，返回分数与邀请码 / 注册 Token |
+| `GET /api/v1/matrix/usernames/{name}/availability` | 核验 Matrix 用户名是否可用（免考流程使用） |
+
+常用示例：
+
+```shell
+BASE="https://你的部署网站/api/v1"
+AUTH="Authorization: Bearer <密钥>"
+
+# 健康检查（免认证）
+curl "$BASE/health"
+
+# 统计摘要
+curl -H "$AUTH" "$BASE/stats"
+
+# 题目列表（按分类筛选，分页）
+curl -H "$AUTH" "$BASE/questions?category=IT&page=1"
+
+# 登记论坛候选人并生成试卷（返回 201，含 candidate 与 paper）
+curl -X POST -H "$AUTH" -H "Content-Type: application/json" \
+  -d '{"channel":"forum","username":"张三","email":"zhangsan@example.com","categories":["IT","ACGN"]}' \
+  "$BASE/candidates"
+
+# 获取试卷（题目不含答案）
+curl -H "$AUTH" "$BASE/candidates/1/paper?channel=forum"
+
+# 交卷计分（answers 键为题目 ID，值为选项字母数组）
+curl -X POST -H "$AUTH" -H "Content-Type: application/json" \
+  -d '{"channel":"forum","answers":{"1":["A"],"2":["A","B"]}}' \
+  "$BASE/candidates/1/submissions"
+
+# 查询候选人状态与凭据
+curl -H "$AUTH" "$BASE/candidates/1?channel=forum"
+
+# Matrix 用户名可用性核验
+curl -H "$AUTH" "$BASE/matrix/usernames/zhangsan/availability"
+```
+
+考试流程中的候选人登记接口同样受作用域与限流保护；面向用户的网页流程（Turnstile 验证码与 OAuth 免考）保持不变。
 
 <p align="right">(<a href="#top">回到顶部</a>)</p>
 
@@ -131,7 +374,12 @@
 - [x] 时间作弊检测
 - [x] 自定义测试时长、过关分数阈值、每题全对分数和多选题漏选分数
 - [x] 完美支持 Flarum 内置 API 接口和 FoF Doorman 插件自带 API 接口
-- [ ] 识别 Markdown 并自动录入试题
+- [x] 支持 Matrix 实例注册测试通道（基于 Matrix Authentication Service 管理 API）
+- [x] 支持 Matrix 账号 OAuth 登录免考论坛测试中的基本礼仪题（MAS 作为 OAuth 提供方）
+- [x] 支持论坛账号 OAuth 登录免考 Matrix 礼仪测试（FoskyM OAuth Center 作为 OAuth 提供方）
+- [x] 管理面板：数据统计、测试信息、题目管理（手动录入 / 编辑 / 删除 / Markdown 表格导入导出）
+- [x] 管理面板双平台管理员校验（论坛 OAuth 路径需同时为论坛管理员与千万桥管理员）
+- [x] 系统 REST API（`/api/v1/...`，覆盖管理端与完整考试流程、API 密钥、作用域、限流、审计日志）
 
 你也可以到 [Open Issues](https://codeberg.org/bridgeeighteen/b18-exam/issues) 页查看所有请求的功能（以及已知的问题）。
 

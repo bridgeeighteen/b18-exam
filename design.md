@@ -1,4 +1,4 @@
-# Design — b18-exam（十八桥社区论坛入站测试系统）
+# Design — b18-exam（十八桥社区入站测试系统）
 
 A locked design system for this app. Every page redesign reads this file before
 emitting code. Do not regenerate per page — extend or amend this file when the
@@ -17,7 +17,12 @@ modern-minimal
 - App pages (info.php / exam.php / result.php): **form-led constrained column**
   — a centered single column (42rem forms, 54rem exam), one card surface, one
   CTA voice, hairline dividers. Variation knobs per page: hero-label, sticky
-  timer pill (exam), code box (result).
+  timer pill (exam), code box (result). info.php adds a **choice-card duo**
+  (matrix-exam.php / matrix-result.php share the app-page family): two
+  side-by-side selectable cards above the form — active card gains an accent
+  border + faint tint (`.choice-card`), one card per registration target
+  (community forum / Matrix instance); selecting one reveals its form, each
+  form carries its own Turnstile widget.
 - Admin pages: same app-page family, narrower column (30rem login card).
 
 ## Theme

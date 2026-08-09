@@ -1,0 +1,1592 @@
+openapi: 3.0.3
+info:
+  title: b18-exam 系统 API
+  version: 1.2.0
+  description: |
+    b18-exam 的统一 RESTful JSON API。覆盖数据统计、题目管理、测试记录、用户、
+    API 密钥与审计日志，以及完整的入站测试流程（候选人登记、试卷获取、交卷计分、
+    邀请码 / 注册 Token 发放）与公共元数据 / 健康检查。
+
+    所有响应统一为信封格式：
+    - 成功：`{"ok": true, "data": ...}`
+    - 失败：`{"ok": false, "data": {"error": {"code": "...", "message": "..."}}}`
+
+    文档地址：见 `docs/api.md`（人读指南）与本文件（机器可读规范）。
+tags:
+  - name: health
+    description: 公共端点（免认证）
+  - name: stats
+    description: 数据统计
+  - name: questions
+    description: 题目管理
+  - name: results
+    description: 测试记录
+  - name: users
+    description: 用户与候选人
+  - name: candidates
+    description: 考试流程（候选人 / 试卷 / 交卷）
+  - name: keys
+    description: API 密钥管理
+  - name: audit
+    description: 审计日志
+  - name: system
+    description: 系统信息
+
+servers:
+  - url: https://your-deployment.example.com/api/v1
+    description: 生产环境（将主机替换为实际部署地址）；本地开发可用 `http://127.0.0.1:8080/api/v1`
+
+security:
+  - bearerAuth: []
+  - sessionAuth: []
+
+paths:
+  /health:
+    get:
+      tags: [health]
+      summary: 健康检查
+      description: 免认证。探测数据库连通性，供 UptimeRobot 等外部监控使用。
+      security: []
+      responses:
+        '200':
+          description: 服务正常
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/Health'
+        '503':
+          description: 服务降级（数据库不可用）
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, data]
+                properties:
+                  ok: { type: boolean, enum: [false] }
+                  data:
+                    $ref: '#/components/schemas/Health'
+
+  /meta:
+    get:
+      tags: [health]
+      summary: 公共元数据
+      description: 免认证。返回版本、通道配置、题目分类与题型等非敏感信息，供外部工具在接入前发现系统能力。
+      security: []
+      responses:
+        '200':
+          description: 元数据
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/Meta'
+
+  /stats:
+    get:
+      tags: [stats]
+      summary: 统计摘要
+      description: 论坛与 Matrix 通道的用户 / 成绩 / 通过率统计、题目数量、今日登记与最近记录。
+      security:
+        - bearerAuth: [stats:read]
+        - sessionAuth: []
+      responses:
+        '200':
+          description: 统计摘要
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/Stats'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /questions:
+    get:
+      tags: [questions]
+      summary: 题目列表
+      description: 按分类 / 题型 / 关键词筛选，支持分页。
+      security:
+        - bearerAuth: [questions:read]
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - name: category
+          in: query
+          schema: { $ref: '#/components/schemas/QuestionCategory' }
+        - name: type
+          in: query
+          schema: { $ref: '#/components/schemas/QuestionType' }
+        - name: q
+          in: query
+          description: 关键词（匹配题干或命题人）
+          schema: { type: string, maxLength: 100 }
+      responses:
+        '200':
+          description: 题目列表（含答案字段）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/QuestionList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    post:
+      tags: [questions]
+      summary: 新建题目
+      security:
+        - bearerAuth: [questions:write]
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionInput'
+      responses:
+        '201':
+          description: 创建成功，Location 头指向新资源
+          headers:
+            Location:
+              schema: { type: string }
+              description: 新题目的详情地址，如 `/api/v1/questions/42`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          id: { type: integer }
+        '409':
+          $ref: '#/components/responses/Duplicate'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /questions/import:
+    post:
+      tags: [questions]
+      summary: Markdown 表格导入
+      description: 批量导入题目。`dry_run=true` 时仅校验并返回统计，不写入数据库。
+      security:
+        - bearerAuth: [questions:write]
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarkdownImportRequest'
+      responses:
+        '200':
+          description: 导入完成（dry_run 或正式导入均返回统计）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/ImportResult'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /questions/export:
+    get:
+      tags: [questions]
+      summary: 导出题目
+      description: 按分类 / 题型筛选，导出为 Markdown 表格。
+      security:
+        - bearerAuth: [questions:read]
+        - sessionAuth: []
+      parameters:
+        - name: category
+          in: query
+          schema: { $ref: '#/components/schemas/QuestionCategory' }
+        - name: type
+          in: query
+          schema: { $ref: '#/components/schemas/QuestionType' }
+      responses:
+        '200':
+          description: Markdown 文本
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          markdown: { type: string }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /questions/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [questions]
+      summary: 题目详情
+      security:
+        - bearerAuth: [questions:read]
+        - sessionAuth: []
+      responses:
+        '200':
+          description: 题目（含答案字段）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/Question'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    put:
+      tags: [questions]
+      summary: 整体更新题目
+      description: 请求体须包含全部必填字段。
+      security:
+        - bearerAuth: [questions:write]
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionInput'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          id: { type: integer }
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Duplicate'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    delete:
+      tags: [questions]
+      summary: 删除题目
+      security:
+        - bearerAuth: [questions:write]
+        - sessionAuth: []
+      responses:
+        '204':
+          description: 删除成功（无响应体）
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /results:
+    get:
+      tags: [results]
+      summary: 测试记录列表
+      description: 按通道 / 通过状态 / 日期范围 / 关键词筛选，支持分页。
+      security:
+        - bearerAuth: [results:read]
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - $ref: '#/components/parameters/Channel'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pass, fail]
+          description: 仅传 `pass`（通过）或 `fail`（未通过）
+        - name: date_from
+          in: query
+          description: 结束时间下界（YYYY-MM-DD，含当天）
+          schema: { type: string, format: date }
+        - name: date_to
+          in: query
+          description: 结束时间上界（YYYY-MM-DD，含当天）
+          schema: { type: string, format: date }
+        - name: q
+          in: query
+          description: 关键词（匹配用户名或邮箱）
+          schema: { type: string, maxLength: 100 }
+      responses:
+        '200':
+          description: 记录列表（含邀请码 / 注册 Token）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/ResultList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /results/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+      - $ref: '#/components/parameters/Channel'
+    get:
+      tags: [results]
+      summary: 测试记录详情
+      description: 记录信息 + 用户完整信息 + 该用户全部历史记录。
+      security:
+        - bearerAuth: [results:read]
+        - sessionAuth: []
+      responses:
+        '200':
+          description: 记录详情
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/ResultDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    delete:
+      tags: [results]
+      summary: 删除测试记录
+      security:
+        - bearerAuth: [results:write]
+        - sessionAuth: []
+      responses:
+        '204':
+          description: 删除成功（无响应体）
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /users:
+    get:
+      tags: [users]
+      summary: 用户列表
+      description: 按关键词与登记时间范围筛选，支持分页。登记时间即 `start_time`。
+      security:
+        - bearerAuth: [users:read]
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - $ref: '#/components/parameters/Channel'
+        - name: q
+          in: query
+          description: 关键词（匹配用户名或邮箱）
+          schema: { type: string, maxLength: 100 }
+        - name: date_from
+          in: query
+          description: 登记时间下界（YYYY-MM-DD，含当天）
+          schema: { type: string, format: date }
+        - name: date_to
+          in: query
+          description: 登记时间上界（YYYY-MM-DD，含当天）
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: 用户列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/UserList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /users/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+      - $ref: '#/components/parameters/Channel'
+    get:
+      tags: [users]
+      summary: 用户详情
+      description: 用户完整信息 + 该用户全部测试记录（含通过状态）。
+      security:
+        - bearerAuth: [users:read]
+        - sessionAuth: []
+      responses:
+        '200':
+          description: 用户详情
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/UserDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    delete:
+      tags: [users]
+      summary: 删除用户
+      description: 删除用户及其全部测试记录（级联）。
+      security:
+        - bearerAuth: [results:write]
+        - sessionAuth: []
+      responses:
+        '204':
+          description: 删除成功（无响应体）
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /candidates:
+    get:
+      tags: [candidates]
+      summary: 候选人列表
+      description: |
+        按通道列出候选人及考试状态（`registered` 已登记 / `paper_generated` 已出卷 /
+        `submitted` 已交卷），支持关键词、状态与登记时间筛选、分页。
+      security:
+        - bearerAuth: [exam:read]
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - $ref: '#/components/parameters/ChannelRequired'
+        - name: q
+          in: query
+          description: 关键词（匹配用户名或邮箱）
+          schema: { type: string, maxLength: 100 }
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [registered, paper_generated, submitted]
+        - name: date_from
+          in: query
+          description: 登记时间下界（YYYY-MM-DD，含当天）
+          schema: { type: string, format: date }
+        - name: date_to
+          in: query
+          description: 登记时间上界（YYYY-MM-DD，含当天）
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: 候选人列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/CandidateList'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    post:
+      tags: [candidates]
+      summary: 登记候选人并生成试卷
+      description: |
+        登记候选人（`channel` 为 `forum` 或 `matrix`）并立即生成试卷、记录开始时间。
+        返回候选人信息与试卷（题目不含答案）。交卷后可再次登记以重考。
+      security:
+        - bearerAuth: [exam:write]
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CandidateCreateRequest'
+      responses:
+        '201':
+          description: 登记成功
+          headers:
+            Location:
+              schema: { type: string }
+              description: 试卷地址，如 `/api/v1/candidates/42/paper`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/CandidateCreateResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Duplicate'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '503':
+          $ref: '#/components/responses/MasUnavailable'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /candidates/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+      - $ref: '#/components/parameters/ChannelRequired'
+    get:
+      tags: [candidates]
+      summary: 候选人详情
+      description: 候选人信息 + 考试状态 + 最近成绩（含凭据）+ 最近试卷（题目不含答案）。
+      security:
+        - bearerAuth: [exam:read]
+        - sessionAuth: []
+      responses:
+        '200':
+          description: 候选人详情
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/CandidateDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    delete:
+      tags: [candidates]
+      summary: 删除候选人
+      description: 删除候选人及其试卷、测试记录（级联）。
+      security:
+        - bearerAuth: [exam:write]
+        - sessionAuth: []
+      responses:
+        '204':
+          description: 删除成功（无响应体）
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /candidates/{id}/paper:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+      - $ref: '#/components/parameters/Channel'
+    get:
+      tags: [candidates]
+      summary: 获取试卷
+      description: 获取候选人最近一份试卷（题目不含答案，含免考标记与时长）。
+      security:
+        - bearerAuth: [exam:read]
+        - sessionAuth: []
+      responses:
+        '200':
+          description: 试卷
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/Paper'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /candidates/{id}/submissions:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+      - $ref: '#/components/parameters/Channel'
+    post:
+      tags: [candidates]
+      summary: 交卷计分
+      description: |
+        提交答卷并计分，返回分数、是否通过及邀请码 / 注册 Token。
+        超时提交（time_violation）会删除该候选人及其记录。
+      security:
+        - bearerAuth: [exam:write]
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmissionRequest'
+      responses:
+        '201':
+          description: 计分完成
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/SubmissionResult'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /keys:
+    get:
+      tags: [keys]
+      summary: API 密钥列表
+      description: 仅返回密钥元数据（明文只在创建时返回一次）。
+      security:
+        - bearerAuth: [keys:admin]
+        - sessionAuth: []
+      responses:
+        '200':
+          description: 密钥列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/ApiKey'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    post:
+      tags: [keys]
+      summary: 创建 API 密钥
+      description: 明文密钥仅在本次响应中返回一次，请立即保存。
+      security:
+        - bearerAuth: [keys:admin]
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiKeyCreateRequest'
+      responses:
+        '201':
+          description: 创建成功
+          headers:
+            Location:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/ApiKeyCreateResponse'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /keys/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    patch:
+      tags: [keys]
+      summary: 启用 / 停用 API 密钥
+      security:
+        - bearerAuth: [keys:admin]
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled]
+              properties:
+                enabled:
+                  type: boolean
+                  description: true 启用，false 停用
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          id: { type: integer }
+                          enabled: { type: boolean }
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    delete:
+      tags: [keys]
+      summary: 删除 API 密钥
+      security:
+        - bearerAuth: [keys:admin]
+        - sessionAuth: []
+      responses:
+        '204':
+          description: 删除成功（无响应体）
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /audit:
+    get:
+      tags: [audit]
+      summary: 审计日志
+      description: 按操作者 / 动作 / 日期范围筛选，支持分页。
+      security:
+        - bearerAuth: [keys:admin]
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - name: q
+          in: query
+          description: 关键词（匹配操作者、动作或目标）
+          schema: { type: string, maxLength: 100 }
+        - name: action
+          in: query
+          description: 精确匹配动作，如 `api:v1:questions:create`
+          schema: { type: string, maxLength: 50 }
+        - name: date_from
+          in: query
+          schema: { type: string, format: date }
+        - name: date_to
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: 审计日志列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/AuditList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /system:
+    get:
+      tags: [system]
+      summary: 系统信息
+      description: 版本与考试配置（只读，不含敏感信息）。
+      security:
+        - bearerAuth: [system:read]
+        - sessionAuth: []
+      responses:
+        '200':
+          description: 系统信息
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/SystemInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /matrix/usernames/{name}/availability:
+    get:
+      tags: [candidates]
+      summary: Matrix 用户名可用性
+      description: 免考流程使用，向 MAS 管理 API 核验用户名是否已被注册。
+      security:
+        - bearerAuth: [exam:read]
+        - sessionAuth: []
+      parameters:
+        - name: name
+          in: path
+          required: true
+          description: Matrix localpart 用户名（小写字母、数字及 . _ = -）
+          schema: { type: string, maxLength: 254 }
+      responses:
+        '200':
+          description: 核验结果
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/UsernameAvailability'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: 在「管理面板 → API 密钥」中创建，明文仅显示一次。密钥以 `b18k_` 开头。
+    sessionAuth:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+      description: 已登录的管理员会话（Cookie）。除 GET / OPTIONS 外的写操作必须携带本次会话的 CSRF Token 请求头。
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      description: 资源 ID
+      schema: { type: integer, minimum: 1 }
+    Page:
+      name: page
+      in: query
+      description: 页码（从 1 开始）
+      schema: { type: integer, minimum: 1, default: 1 }
+    PerPage:
+      name: per_page
+      in: query
+      description: 每页条数
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    Channel:
+      name: channel
+      in: query
+      description: 测试通道，默认 `forum`
+      schema: { type: string, enum: [forum, matrix], default: forum }
+    ChannelRequired:
+      name: channel
+      in: query
+      required: true
+      description: 测试通道
+      schema: { type: string, enum: [forum, matrix] }
+  responses:
+    Unauthorized:
+      description: 未认证（密钥无效 / 会话过期）
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Forbidden:
+      description: 无权限（作用域不足 / 密钥停用 / 密钥过期 / 非 HTTPS）
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    NotFound:
+      description: 资源不存在
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Conflict:
+      description: 冲突（如超时交卷 409 time_violation、未出卷 409 no_paper）
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Duplicate:
+      description: 相同分类下已存在相同题干的题目（409 duplicate）
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    ValidationFailed:
+      description: 参数校验失败（422 validation_failed）
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    RateLimited:
+      description: 请求过于频繁（429 rate_limited）
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    MasUnavailable:
+      description: Matrix Authentication Service 不可用（503 mas_unavailable）
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+  schemas:
+    SuccessEnvelope:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data: {}
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string, description: 机器可读错误码，如 `not_found` }
+        message: { type: string, description: 人读错误信息 }
+    ErrorEnvelope:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        data:
+          type: object
+          required: [error]
+          properties:
+            error:
+              $ref: '#/components/schemas/Error'
+    Pagination:
+      type: object
+      required: [items, total, page, per_page, pages]
+      properties:
+        total: { type: integer, description: 符合筛选条件的总条数 }
+        page: { type: integer }
+        per_page: { type: integer }
+        pages: { type: integer, description: 总页数 }
+    QuestionCategory:
+      type: string
+      enum: [IT, ACGN, Virtual_Singer, Broadcasting, Etiquette]
+    QuestionType:
+      type: string
+      enum: [single, multiple]
+    Question:
+      type: object
+      required: [id, category, question_text, option_a, option_b, option_c, option_d, answer, type, author]
+      properties:
+        id: { type: integer }
+        category: { $ref: '#/components/schemas/QuestionCategory' }
+        question_text: { type: string }
+        option_a: { type: string }
+        option_b: { type: string }
+        option_c: { type: string }
+        option_d: { type: string }
+        answer: { type: string, description: 答案字母，如 `A` 或 `ABC`（不含分隔符） }
+        type: { $ref: '#/components/schemas/QuestionType' }
+        author: { type: string, description: 命题人，可为空字符串 }
+    QuestionInput:
+      type: object
+      required: [category, question_text, option_a, option_b, option_c, option_d, answer, type]
+      properties:
+        category: { $ref: '#/components/schemas/QuestionCategory' }
+        question_text: { type: string, maxLength: 5000 }
+        option_a: { type: string, maxLength: 255 }
+        option_b: { type: string, maxLength: 255 }
+        option_c: { type: string, maxLength: 255 }
+        option_d: { type: string, maxLength: 255 }
+        answer:
+          type: string
+          description: 单选填单个字母（A/B/C/D）；多选填字母组合（如 `ABC` 或 `A,B`）
+        type: { $ref: '#/components/schemas/QuestionType' }
+        author: { type: string, maxLength: 100, description: 命题人，可省略 }
+    QuestionList:
+      allOf:
+        - $ref: '#/components/schemas/Pagination'
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Question'
+    MarkdownImportRequest:
+      type: object
+      required: [category, markdown]
+      properties:
+        category: { $ref: '#/components/schemas/QuestionCategory' }
+        markdown:
+          type: string
+          description: Markdown 表格，表头 `| 题干 | A | B | C | D | 答案 | 类型 | 命题人 |`（可含「分类」列）
+        skip_duplicates: { type: boolean, default: true, description: true 时跳过重复题 }
+        dry_run: { type: boolean, default: false, description: true 时仅校验，不写入 }
+    ImportResult:
+      type: object
+      required: [total, imported, skipped, failed, errors]
+      properties:
+        total: { type: integer }
+        imported: { type: integer }
+        skipped: { type: integer }
+        failed: { type: integer }
+        errors:
+          type: array
+          description: 失败行详情（最多 50 条）
+          items:
+            type: object
+    ResultItem:
+      type: object
+      required: [id, score, end_time, code, user_id, username, email, passed]
+      properties:
+        id: { type: integer }
+        score: { type: integer }
+        end_time: { type: string, description: 'YYYY-MM-DD HH:MM:SS' }
+        code: { type: string, description: 邀请码（forum）或注册 Token（matrix） }
+        user_id: { type: integer }
+        username: { type: string }
+        email: { type: string }
+        passed: { type: boolean }
+    ResultList:
+      allOf:
+        - $ref: '#/components/schemas/Pagination'
+        - type: object
+          properties:
+            channel: { type: string, enum: [forum, matrix] }
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/ResultItem'
+    ResultDetail:
+      type: object
+      required: [channel, passed, user, history]
+      properties:
+        channel: { type: string, enum: [forum, matrix] }
+        passed: { type: boolean }
+        user:
+          type: object
+          description: 用户完整行（含 code 与本次分数）
+        history:
+          type: array
+          description: 该用户全部历史记录（id / score / end_time / code）
+          items:
+            type: object
+    User:
+      type: object
+      description: 用户行。forum 通道含 selected_categories / matrix_oauth_mxid / matrix_oauth_verified_at；matrix 通道含 forum_oauth_user_id / forum_oauth_verified_at。
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        email: { type: string }
+        start_time: { type: string, nullable: true }
+        selected_categories: { type: string, nullable: true }
+        matrix_oauth_mxid: { type: string, nullable: true }
+        matrix_oauth_verified_at: { type: string, nullable: true }
+        forum_oauth_user_id: { type: integer, nullable: true }
+        forum_oauth_verified_at: { type: string, nullable: true }
+    UserList:
+      allOf:
+        - $ref: '#/components/schemas/Pagination'
+        - type: object
+          properties:
+            channel: { type: string, enum: [forum, matrix] }
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/User'
+    UserDetail:
+      type: object
+      required: [channel, user, history]
+      properties:
+        channel: { type: string, enum: [forum, matrix] }
+        user:
+          $ref: '#/components/schemas/User'
+        history:
+          type: array
+          items:
+            allOf:
+              - type: object
+                properties:
+                  id: { type: integer }
+                  score: { type: integer }
+                  end_time: { type: string }
+                  code: { type: string }
+                  passed: { type: boolean }
+    CandidateCreateRequest:
+      type: object
+      required: [channel, username, email]
+      properties:
+        channel: { type: string, enum: [forum, matrix] }
+        username:
+          type: string
+          description: forum：任意用户名；matrix：MAS localpart（小写字母、数字及 . _ = -）
+        email: { type: string, format: email }
+        categories:
+          type: array
+          description: 仅 forum 通道必填，恰好选择 2 个基类
+          items:
+            type: string
+            enum: [IT, ACGN, Virtual_Singer, Broadcasting]
+        matrix_oauth_mxid:
+          type: string
+          description: 仅 forum 通道可选；合法 MXID 时礼仪题免考
+        forum_oauth_user_id:
+          type: integer
+          description: 仅 matrix 通道可选；非空时礼仪测试免考
+    CandidateCreateResponse:
+      type: object
+      required: [candidate, paper]
+      properties:
+        candidate:
+          type: object
+          properties:
+            id: { type: integer }
+            username: { type: string }
+            email: { type: string }
+            selected_categories: { type: string, nullable: true }
+            matrix_oauth_mxid: { type: string, nullable: true }
+            forum_oauth_user_id: { type: integer, nullable: true }
+        paper:
+          $ref: '#/components/schemas/Paper'
+        matrix_oauth_mxid: { type: string, nullable: true }
+        forum_oauth_exempt: { type: boolean, nullable: true }
+        username_notice: { type: string, nullable: true }
+    CandidateStatus:
+      type: string
+      enum: [registered, paper_generated, submitted]
+      description: registered 已登记 / paper_generated 已出卷 / submitted 已交卷
+    CandidateListItem:
+      type: object
+      required: [id, channel, username, email, start_time, status, exam_paper_id, latest_score, passed, ended_at]
+      properties:
+        id: { type: integer }
+        channel: { type: string, enum: [forum, matrix] }
+        username: { type: string }
+        email: { type: string }
+        start_time: { type: string, nullable: true }
+        status: { $ref: '#/components/schemas/CandidateStatus' }
+        exam_paper_id: { type: integer, nullable: true }
+        latest_score: { type: integer, nullable: true }
+        passed: { type: boolean, nullable: true }
+        ended_at: { type: string, nullable: true }
+        selected_categories: { type: string, nullable: true }
+        matrix_oauth_mxid: { type: string, nullable: true }
+        forum_oauth_user_id: { type: integer, nullable: true }
+    CandidateList:
+      allOf:
+        - $ref: '#/components/schemas/Pagination'
+        - type: object
+          properties:
+            channel: { type: string, enum: [forum, matrix] }
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/CandidateListItem'
+    CandidateDetail:
+      type: object
+      required: [channel, id, username, email, start_time, status, exam_paper_id, result, paper]
+      properties:
+        channel: { type: string, enum: [forum, matrix] }
+        id: { type: integer }
+        username: { type: string }
+        email: { type: string }
+        start_time: { type: string, nullable: true }
+        status: { $ref: '#/components/schemas/CandidateStatus' }
+        exam_paper_id: { type: integer, nullable: true }
+        result:
+          type: object
+          nullable: true
+          properties:
+            id: { type: integer }
+            score: { type: integer }
+            passed: { type: boolean }
+            end_time: { type: string }
+            code: { type: string, description: 邀请码（forum）或注册 Token（matrix） }
+        paper:
+          $ref: '#/components/schemas/Paper'
+          description: 最近试卷（未出卷时为 null）
+        selected_categories: { type: string, nullable: true }
+        matrix_oauth_mxid: { type: string, nullable: true }
+        forum_oauth_user_id: { type: integer, nullable: true }
+    PaperQuestion:
+      type: object
+      required: [id, category, type, question_text, option_a, option_b, option_c, option_d]
+      properties:
+        id: { type: integer }
+        category: { $ref: '#/components/schemas/QuestionCategory' }
+        type: { $ref: '#/components/schemas/QuestionType' }
+        question_text: { type: string }
+        option_a: { type: string }
+        option_b: { type: string }
+        option_c: { type: string }
+        option_d: { type: string }
+    Paper:
+      type: object
+      required: [id, channel, candidate, questions, etiquette_exempt, etiquette_exempt_ids, started_at, duration_minutes]
+      properties:
+        id: { type: integer }
+        channel: { type: string, enum: [forum, matrix] }
+        candidate:
+          type: object
+          properties:
+            id: { type: integer }
+            username: { type: string }
+            email: { type: string }
+        questions:
+          type: array
+          description: 题目（不含答案，避免泄露）
+          items:
+            $ref: '#/components/schemas/PaperQuestion'
+        etiquette_exempt: { type: boolean, description: 礼仪题是否免考 }
+        etiquette_exempt_ids:
+          type: array
+          items: { type: integer }
+        started_at: { type: string }
+        duration_minutes: { type: integer }
+    SubmissionRequest:
+      type: object
+      required: [channel, answers]
+      properties:
+        channel: { type: string, enum: [forum, matrix] }
+        answers:
+          type: object
+          description: 键为题目 ID，值为选项字母数组（如 `{"1":["A"],"2":["A","B"]}`）
+          additionalProperties:
+            type: array
+            items: { type: string, maxLength: 1 }
+    SubmissionResult:
+      type: object
+      required: [score, passed, etiquette_exempt, credential]
+      properties:
+        score: { type: integer }
+        passed: { type: boolean }
+        etiquette_exempt: { type: boolean }
+        credential:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: [invitation_code, registration_token]
+            issued: { type: boolean }
+            value: { type: string, description: 未达到分数线时为提示文本，发放失败时为空串 }
+            error: { type: string, nullable: true }
+    ApiKey:
+      type: object
+      required: [id, name, scopes, created_at, expires_at, last_used_at, enabled, expired]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        scopes:
+          type: array
+          items: { type: string }
+          description: 作用域列表，如 `questions:read`、`exam:write`
+        created_at: { type: string }
+        expires_at: { type: string, nullable: true }
+        last_used_at: { type: string, nullable: true }
+        enabled: { type: boolean }
+        expired: { type: boolean }
+    ApiKeyCreateRequest:
+      type: object
+      required: [name, scopes]
+      properties:
+        name: { type: string, maxLength: 50 }
+        scopes:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            enum:
+              - stats:read
+              - questions:read
+              - questions:write
+              - results:read
+              - results:write
+              - users:read
+              - keys:admin
+              - system:read
+              - exam:read
+              - exam:write
+        expiry_days: { type: integer, minimum: 0, maximum: 3650, default: 0, description: 有效期（天），0 表示不过期 }
+    ApiKeyCreateResponse:
+      type: object
+      required: [key, row]
+      properties:
+        key: { type: string, description: 明文密钥（仅此一次，请立即保存） }
+        row:
+          $ref: '#/components/schemas/ApiKey'
+    AuditItem:
+      type: object
+      properties:
+        id: { type: integer }
+        actor: { type: string }
+        action: { type: string }
+        target: { type: string, nullable: true }
+        detail: { type: string, nullable: true }
+        ip: { type: string, nullable: true }
+        created_at: { type: string }
+    AuditList:
+      allOf:
+        - $ref: '#/components/schemas/Pagination'
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/AuditItem'
+    SystemInfo:
+      type: object
+      required: [version, php_version, forum_closed, matrix_enabled, matrix_closed, forum, matrix]
+      properties:
+        version: { type: string }
+        php_version: { type: string }
+        forum_closed: { type: boolean }
+        matrix_enabled: { type: boolean }
+        matrix_closed: { type: boolean }
+        forum:
+          type: object
+          properties:
+            duration_minutes: { type: integer }
+            score_threshold: { type: integer }
+            score_correct: { type: integer }
+            score_partial: { type: integer }
+        matrix:
+          type: object
+          properties:
+            instance_name: { type: string }
+            duration_minutes: { type: integer }
+            score_threshold: { type: integer }
+            score_correct: { type: integer }
+            score_partial: { type: integer }
+    Health:
+      type: object
+      required: [status, version, db, time]
+      properties:
+        status: { type: string, enum: [ok, degraded] }
+        version: { type: string }
+        db: { type: string, enum: [ok, error] }
+        time: { type: string }
+    Meta:
+      type: object
+      required: [version, channels, question_categories, question_types]
+      properties:
+        version: { type: string }
+        channels:
+          type: object
+          properties:
+            forum:
+              type: object
+              properties:
+                enabled: { type: boolean }
+                duration_minutes: { type: integer }
+                score_threshold: { type: integer }
+                score_correct: { type: integer }
+                score_partial: { type: integer }
+            matrix:
+              type: object
+              properties:
+                enabled: { type: boolean }
+                instance_name: { type: string }
+                duration_minutes: { type: integer }
+                score_threshold: { type: integer }
+                score_correct: { type: integer }
+                score_partial: { type: integer }
+        question_categories:
+          type: array
+          items: { $ref: '#/components/schemas/QuestionCategory' }
+        question_types:
+          type: array
+          items: { $ref: '#/components/schemas/QuestionType' }
+    UsernameAvailability:
+      type: object
+      required: [username, available, reason]
+      properties:
+        username: { type: string }
+        available: { type: boolean }
+        reason:
+          type: string
+          enum: [available, in_use, invalid_username, mas_unavailable]
+    Stats:
+      type: object
+      properties:
+        forum:
+          type: object
+          properties:
+            users: { type: integer }
+            results: { type: integer }
+            passed: { type: integer }
+            avg_score: { type: number }
+            pass_rate: { type: number }
+            exempt_count: { type: integer }
+        matrix:
+          type: object
+          properties:
+            users: { type: integer }
+            results: { type: integer }
+            passed: { type: integer }
+            avg_score: { type: number }
+            pass_rate: { type: number }
+            exempt_count: { type: integer }
+        questions:
+          type: object
+          properties:
+            total: { type: integer }
+            categories:
+              type: object
+              additionalProperties: { type: integer }
+        today:
+          type: object
+          properties:
+            forum_registered: { type: integer }
+            matrix_registered: { type: integer }
+        recent:
+          type: object
+          properties:
+            forum:
+              type: array
+              items: { type: object }
+            matrix:
+              type: array
+              items: { type: object }
+        config:
+          type: object
+          properties:
+            forum_closed: { type: boolean }
+            matrix_enabled: { type: boolean }
+            matrix_closed: { type: boolean }
+            forum_threshold: { type: integer }
+            matrix_threshold: { type: integer }
+            forum_duration: { type: integer }
+            matrix_duration: { type: integer }

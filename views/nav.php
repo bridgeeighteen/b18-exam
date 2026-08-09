@@ -20,14 +20,14 @@
                         <a class="nav-link" href="https://github.com/bridgeeighteen/b18-exam">源代码</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">管理（开发中）</a>
+                        <a class="nav-link" href="/admin/">管理</a>
                     </li>
                 </ul>
             </div>
         </div>
     </nav>
     <div class="container">
-        <div class="row justify-content-center mt-5">
+        <div class="row justify-content-center">
             <div class="col">
 <?php
 if (isset($_GET["old_domain"]) && $_GET["old_domain"] == "1") {

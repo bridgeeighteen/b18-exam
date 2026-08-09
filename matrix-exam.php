@@ -1,8 +1,8 @@
 <?php
 require_once 'config.php';
 require_once 'includes/security.php';
-require_once 'includes/oauth.php';
 require_once 'includes/exam-service.php';
+require_once 'includes/oauth.php';
 require_once './vendor/autoload.php';
 
 initSecurity();
@@ -12,52 +12,56 @@ if (DB_TIMEZONE_LOCK) {
     date_default_timezone_set(PHP_TIMEZONE);
 }
 
-$matrixMxid = null;
+$matrixError = null;
+$usernameNotice = null;
 $user = null;
 $questions = [];
+$forumOauthExempt = false;
 
-if (FORUM_CLOSED) {
-} else {
-    if ($_SERVER["REQUEST_METHOD"] == "POST") {
-        $turnstile = verifyTurnstileToken((string)($_POST['cf-turnstile-response'] ?? ''));
+if (MATRIX_CLOSED) {
+} elseif (!MATRIX_ENABLED) {
+    $matrixError = '注册' . MATRIX_INSTANCE_NAME . '的测试通道尚未开启。更多详情请查看社区论坛和联邦宇宙官宣账号。';
+} elseif ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $turnstile = verifyTurnstileToken((string)($_POST['cf-turnstile-response'] ?? ''));
 
-        if ($turnstile['error'] !== null) {
-            echo $turnstile['error'];
-            exit;
-        }
+    if ($turnstile['error'] !== null) {
+        $matrixError = $turnstile['error'];
+    } elseif ($turnstile['warning'] !== null) {
+        $matrixError = $turnstile['warning'];
+    }
 
-        if ($turnstile['warning'] !== null) {
-            echo $turnstile['warning'];
-        }
-
-        // 已通过 Matrix 账号 OAuth 验证且邮箱一致的用户，免考基本礼仪题
-        $matrixOauth = matrixOAuthVerified();
+    if ($matrixError === null) {
         $email = trim((string)($_POST['email'] ?? ''));
-        if ($matrixOauth !== null && oauthEmailsMatch($matrixOauth['email'], $email)) {
-            $matrixMxid = $matrixOauth['mxid'];
+
+        // 已通过论坛账号 OAuth 验证且邮箱一致的用户，免考礼仪测试
+        $forumOauth = forumOAuthVerified();
+        $forumOauthUserId = null;
+        if ($forumOauth !== null && oauthEmailsMatch($forumOauth['email'], $email)) {
+            $forumOauthUserId = (int)$forumOauth['user_id'];
         }
 
-        $result = registerForumCandidate(
+        $result = registerMatrixCandidate(
             (string)($_POST['username'] ?? ''),
             $email,
-            (array)($_POST['categories'] ?? []),
-            $matrixMxid
+            $forumOauthUserId
         );
 
         if (isset($result['error'])) {
-            die('错误：' . $result['error']['message']);
-        }
-        if (!empty($result['errors'])) {
-            die('错误：' . implode(' ', $result['errors']));
-        }
+            $matrixError = $result['error']['message'];
+        } elseif (!empty($result['errors'])) {
+            $matrixError = implode(' ', $result['errors']);
+        } else {
+            $user = $result['candidate'];
+            $usernameNotice = $result['username_notice'];
+            $forumOauthExempt = $result['forum_oauth_exempt'];
 
-        $user = $result['candidate'];
-
-        $paperResult = buildExamPaper('forum', (int)$user['id']);
-        if (isset($paperResult['error'])) {
-            die($paperResult['error']['message']);
+            $paperResult = buildExamPaper('matrix', (int)$user['id']);
+            if (isset($paperResult['error'])) {
+                $matrixError = $paperResult['error']['message'];
+            } else {
+                $questions = $paperResult['paper']['questions'];
+            }
         }
-        $questions = $paperResult['paper']['questions'];
     }
 }
 
@@ -69,7 +73,7 @@ sendSecurityHeaders();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>答卷 - 十八桥社区入站测试系统</title>
+    <title>答卷 - <?php echo htmlspecialchars(MATRIX_INSTANCE_NAME); ?>礼仪测试</title>
     <link rel="stylesheet" href="./vendor/twbs/bootstrap/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="./views/assets/css/noto-face.css">
     <link rel="stylesheet" href="./views/assets/css/tokens.css">
@@ -87,13 +91,13 @@ sendSecurityHeaders();
                 display.textContent = minutes + ":" + seconds;
 
                 if (--timer < 0) {
-                    document.getElementById("examForm").submit();
+                    document.getElementById("matrixExamForm").submit();
                 }
             }, 1000);
         }
 
         window.onload = function() {
-            var duration = <?php echo htmlspecialchars(EXAM_REMAIN_TIME); ?> * 60,
+            var duration = <?php echo htmlspecialchars(MATRIX_EXAM_REMAIN_TIME); ?> * 60,
                 display = document.querySelector('#timer');
             startTimer(duration, display);
         };
@@ -102,11 +106,64 @@ sendSecurityHeaders();
 
 <?php
 require './views/nav.php';
-if (FORUM_CLOSED) {
-    echo '<div class="alert alert-warning" role="alert">测试通道已关闭，原因：' . FORUM_CLOSED_REASON . '更多详情请查看社区论坛和联邦宇宙官宣账号。</div>';
+if (MATRIX_CLOSED) {
+    echo '<div class="alert alert-warning" role="alert">测试通道已关闭，原因：' . MATRIX_CLOSED_REASON . '更多详情请查看社区论坛和联邦宇宙官宣账号。</div>';
     include './views/footer.php';
     exit;
-} else {
+} elseif ($forumOauthExempt && $user !== null && empty($questions)) {
+?>
+    <div class="page page-narrow mx-auto">
+        <div class="card form-card mt-4">
+            <div class="card-body">
+                <h1 class="page-title">礼仪测试免考确认</h1>
+                <p class="card-text">你已通过论坛账号验证，将免考<?php echo htmlspecialchars(MATRIX_INSTANCE_NAME); ?>礼仪测试并直接获得满分，随后系统会为你发放注册 Token。</p>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th scope="col">用户 ID</th>
+                            <th scope="col">登记用户名</th>
+                            <th scope="col">电子邮件地址</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row"><?php echo htmlspecialchars($user['id'], ENT_QUOTES, 'UTF-8'); ?></th>
+                            <td><?php echo htmlspecialchars($user['username'], ENT_QUOTES, 'UTF-8'); ?></td>
+                            <td><?php echo htmlspecialchars($user['email'], ENT_QUOTES, 'UTF-8'); ?></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <form action="matrix-result.php" method="post">
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generateCSRFToken()); ?>">
+                    <input type="hidden" name="user_id" value="<?php echo htmlspecialchars($user['id'], ENT_QUOTES, 'UTF-8'); ?>">
+                    <input type="hidden" name="oauth_exempt" value="1">
+                    <button type="submit" class="btn btn-primary btn-lg w-100">确认并获取注册 Token</button>
+                </form>
+                <a class="btn btn-outline-secondary mt-2 w-100" href="info.php" role="button">返回信息登记</a>
+            </div>
+        </div>
+    </div>
+<?php
+    include './views/footer.php';
+    exit;
+} elseif (!MATRIX_ENABLED || $matrixError !== null || empty($questions)) {
+?>
+    <div class="page page-narrow mx-auto">
+        <div class="card form-card mt-4">
+            <div class="card-body">
+                <h1 class="page-title"><?php echo htmlspecialchars(MATRIX_INSTANCE_NAME); ?>礼仪测试</h1>
+                <?php if ($matrixError !== null) : ?>
+                    <div class="alert alert-danger" role="alert"><?php echo nl2br(htmlspecialchars($matrixError)); ?></div>
+                <?php else : ?>
+                    <div class="alert alert-warning" role="alert">请先前往信息登记页面选择注册<?php echo htmlspecialchars(MATRIX_INSTANCE_NAME); ?>并填写信息，再开始礼仪测试。</div>
+                <?php endif; ?>
+                <a class="btn btn-primary" href="info.php" role="button">返回信息登记</a>
+            </div>
+        </div>
+    </div>
+<?php
+    include './views/footer.php';
+    exit;
 }
 ?>
 <div class="exam-bar">
@@ -118,8 +175,8 @@ if (FORUM_CLOSED) {
     </div>
 </div>
 <div class="page page-tight mx-auto">
-    <?php if ($matrixMxid !== null) : ?>
-        <div class="alert alert-info" role="alert">礼仪测试免考：你已通过 Matrix 账号（<?php echo htmlspecialchars($matrixMxid); ?>）验证，本测试不包含基本礼仪题，该部分将直接获得满分。</div>
+    <?php if ($usernameNotice !== null) : ?>
+        <div class="alert alert-info" role="alert"><?php echo htmlspecialchars($usernameNotice); ?></div>
     <?php endif; ?>
     <div class="card mb-4">
         <div class="card-body">
@@ -130,7 +187,6 @@ if (FORUM_CLOSED) {
                         <th scope="col">用户 ID</th>
                         <th scope="col">登记用户名</th>
                         <th scope="col">电子邮件地址</th>
-                        <th scope="col">基类组合</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -138,14 +194,13 @@ if (FORUM_CLOSED) {
                         <th scope="row"><?php echo htmlspecialchars(isset($user['id']) ? $user['id'] : '错误：数据库返回了空值。请立即停止测试并通过管理邮箱报告此问题。', ENT_QUOTES, 'UTF-8'); ?></th>
                         <td><?php echo htmlspecialchars(isset($user['username']) ? $user['username'] : '错误：数据库返回了空值。请立即停止测试并通过管理邮箱报告此问题。', ENT_QUOTES, 'UTF-8'); ?></td>
                         <td><?php echo htmlspecialchars(isset($user['email']) ? $user['email'] : '错误：数据库返回了空值。请立即停止测试并通过管理邮箱报告此问题。', ENT_QUOTES, 'UTF-8'); ?></td>
-                        <td><?php echo htmlspecialchars(isset($user['selected_categories']) ? $user['selected_categories'] : '错误：数据库返回了空值。请立即停止测试并通过管理邮箱报告此问题。', ENT_QUOTES, 'UTF-8'); ?></td>
                     </tr>
                 </tbody>
             </table>
         </div>
     </div>
 
-<form id="examForm" action="result.php" method="post">
+<form id="matrixExamForm" action="matrix-result.php" method="post">
     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generateCSRFToken()); ?>">
     <?php
     $questionNumber = 1; // 初始化题号

@@ -6,11 +6,6 @@ require_once __DIR__ . '/../../includes/version.php';
         </div>
     </div>
     <script src="../vendor/twbs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
-            new bootstrap.Tooltip(el)
-        })
-    </script>
 </body>
 
 </html>

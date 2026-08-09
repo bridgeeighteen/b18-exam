@@ -3,13 +3,15 @@
     Deny from all
 </Files>
 
-<FilesMatch "^(config\.php|\.env|composer\.(json|lock))$">
+<FilesMatch "^(config\.php|config-example\.php|\.env|composer\.(json|lock)|.*\.sql)$">
     Order Allow,Deny
     Deny from all
 </FilesMatch>
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    RewriteRule ^api/v1/(.*)$ api/index.php?path=/v1/$1 [L,QSA]
     RewriteRule ^vendor/ - [F,L]
     RewriteRule ^composer\.(json|lock)$ - [F,L]
+    RewriteRule ^.*\.sql$ - [F,L]
 </IfModule>
