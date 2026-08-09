@@ -291,6 +291,16 @@ CREATE TABLE `blacklist` (
 
 系统提供统一的 RESTful JSON API（`/api/v1/...`），覆盖管理端的数据统计、题目管理、测试记录、用户、API 密钥、黑名单与审计日志，以及完整的入站测试流程（候选人登记、试卷获取、交卷计分与邀请码 / 注册 Token 发放）。API 供外部工具（如论坛机器人、监控服务）与管理面板共用。
 
+> **Nginx 部署注意**：Nginx 不读取 `.htaccess`。请务必在站点配置的 `server` 块中添加 `/api/v1/` 的伪静态规则，否则管理面板的所有 API 功能（含 Markdown 导入/导出）会收到 Nginx 的 404 页面并报 `JSON.parse: unexpected character at line 1 column 1`：
+>
+> ```nginx
+> location ^~ /api/v1/ {
+>     rewrite ^/api/v1/(.*)$ /api/index.php?path=/v1/$1 last;
+> }
+> ```
+>
+> 管理面板前端同时使用了 PATH_INFO 形式（`api/index.php/v1/...`）作为兜底，缺少该规则时面板功能依然可用。
+
 **文档**：完整的 API 文档已独立成册 —— 人读指南见 [`docs/api.md`](docs/api.md)（认证、作用域、端点参考、示例与集成场景），机器可读规范见 [`docs/api/openapi.yaml`](docs/api/openapi.yaml)（OpenAPI 3.0，可用 Swagger UI / Redoc 渲染）。
 
 **快速上手**：

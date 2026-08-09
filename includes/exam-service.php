@@ -398,6 +398,9 @@ function scoreSubmission(string $channel, int $candidateId, array $answers): arr
 }
 
 // 按试卷题目计分：免考礼仪题直接满分，其余题目依据提交的答案评分
+// 规则：
+// - 单选题：提交内容与标准答案完全一致得满分；
+// - 多选题：含错选得 0 分；所选与正确答案完全一致得满分；所选均为正确选项但不全得部分分。
 function gradeAnswers(string $channel, array $questionIds, array $exemptIds, array $answers): int
 {
     $fullScore = $channel === 'matrix' ? (int)MATRIX_SCORE_CORRECT_QUESTION : (int)SCORE_CORRECT_QUESTION;
@@ -412,24 +415,28 @@ function gradeAnswers(string $channel, array $questionIds, array $exemptIds, arr
     foreach (fetchQuestionsByIds($questionIds) as $question) {
         $qid = (int)$question['id'];
 
-        $submittedRaw = array_values(array_map('strtoupper', array_map('trim', array_values(array_filter($answers[$qid] ?? [], 'is_string')))));
-        $submittedRaw = array_values(array_filter($submittedRaw, 'strlen'));
-        if ($submittedRaw === []) {
+        $submitted = array_values(array_unique(array_map('strtoupper', array_map('trim', array_values(array_filter($answers[$qid] ?? [], 'is_string'))))));
+        $submitted = array_values(array_filter($submitted, 'strlen'));
+        if ($submitted === []) {
             continue;
         }
 
-        if (strpos((string)$question['answer'], ',') !== false) {
-            // 多选题：含错选得 0 分；所选均为正确选项时得部分分
-            $correctParts = array_map('strtoupper', array_filter(explode(',', str_replace(['(', ')'], '', (string)$question['answer'])), 'strlen'));
-            $numCorrect = count(array_intersect($correctParts, $submittedRaw));
-            $numIncorrect = count(array_diff($submittedRaw, $correctParts));
-            if ($numIncorrect === 0 && $numCorrect > 0) {
-                $total += $partialScore;
+        // 规范化标准答案为大写字母集合，兼容 "A"、"AB"、"A,B"、"A, B"、"（A）" 等写法
+        $normalizedAnswer = str_replace(['(', ')', '（', '）', '，', ',', ' '], '', strtoupper((string)$question['answer']));
+        $correctLetters = array_values(array_unique(preg_split('//u', $normalizedAnswer, -1, PREG_SPLIT_NO_EMPTY)));
+
+        if ($question['type'] === 'multiple') {
+            // 多选题：含错选得 0 分；所选与正确答案一致得满分；所选均为正确选项但不全得部分分
+            $numIncorrect = count(array_diff($submitted, $correctLetters));
+            if ($numIncorrect > 0) {
+                continue;
             }
+            $complete = count($submitted) === count($correctLetters) && count(array_intersect($submitted, $correctLetters)) === count($correctLetters);
+            $total += $complete ? $fullScore : $partialScore;
         } else {
             // 单选题：提交内容与标准答案完全一致得满分
-            $correct = strtoupper(str_replace(['(', ')', ',', ' '], '', (string)$question['answer']));
-            if (implode(',', $submittedRaw) === $correct) {
+            $correct = str_replace(['(', ')', '（', '）', '，', ',', ' '], '', strtoupper((string)$question['answer']));
+            if (implode(',', $submitted) === $correct) {
                 $total += $fullScore;
             }
         }
@@ -438,7 +445,9 @@ function gradeAnswers(string $channel, array $questionIds, array $exemptIds, arr
     return $total;
 }
 
-// 检查是否超时（超过测试时长），超时则删除该候选人及其测试记录并返回 true
+// 检查是否超时（超过测试时长），超时则删除该候选人及其测试记录并返回 true。
+// 通过 UNIX_TIMESTAMP 在数据库会话时区下取开始时间的绝对时间戳，
+// 避免 PHP 与数据库时区不一致或 strtotime 解析失败导致的误判。
 function checkTimeViolation(string $channel, int $candidateId): bool
 {
     $candidate = getCandidate($channel, $candidateId);
@@ -446,9 +455,17 @@ function checkTimeViolation(string $channel, int $candidateId): bool
         return false;
     }
 
+    $table = $channel === 'matrix' ? 'matrix_users' : 'users';
+    $stmt = getPDO()->prepare("SELECT UNIX_TIMESTAMP(start_time) FROM $table WHERE id = ?");
+    $stmt->execute([$candidateId]);
+    $startTs = $stmt->fetchColumn();
+    if ($startTs === false || $startTs === null) {
+        return false;
+    }
+
     $duration = $channel === 'matrix' ? (int)MATRIX_EXAM_REMAIN_TIME : (int)EXAM_REMAIN_TIME;
-    $expectedEnd = strtotime((string)$candidate['start_time'] . '+' . $duration . ' minutes');
-    if ($expectedEnd !== false && time() <= $expectedEnd) {
+    $expectedEnd = (int)$startTs + $duration * 60;
+    if (time() <= $expectedEnd) {
         return false;
     }
 

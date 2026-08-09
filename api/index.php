@@ -19,6 +19,9 @@ require_once __DIR__ . '/../includes/oauth.php';
 // - 重写规则（.htaccess）：/api/v1/... → api/index.php?path=/v1/...
 // - PATH_INFO：api/index.php/v1/...（PHP 内置服务器 / Nginx 亦可）
 
+// API 请求上下文标记：getPDO() 等数据库失败时抛异常交由下方统一处理，输出 JSON 错误而不是纯文本
+define('API_REQUEST', true);
+
 apiInit();
 
 // 路由表：[HTTP 方法, 路径模式, 所需作用域（public 表示免认证）, 处理器, 审计动作（null 表示只读不审计）]

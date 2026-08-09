@@ -39,7 +39,7 @@ function getPDO(bool $throwOnFailure = false): PDO
             ]);
         } catch (PDOException $e) {
             error_log("数据库连接失败：" . $e->getMessage());
-            if ($throwOnFailure) {
+            if ($throwOnFailure || defined('API_REQUEST')) {
                 throw $e;
             }
             die("数据库连接失败。如果问题依旧存在，请稍后重试。");

@@ -20,6 +20,16 @@ https://你的部署网站/api/v1
 - 重写规则（Apache `.htaccess` 已内置）：`/api/v1/...` → `api/index.php?path=/v1/...`
 - PATH_INFO（Nginx / PHP 内置服务器）：`api/index.php/v1/...`
 
+Nginx 部署请在站点配置的 `server` 块中添加以下规则（对应 Apache `.htaccess` 的重写）：
+
+```nginx
+location ^~ /api/v1/ {
+    rewrite ^/api/v1/(.*)$ /api/index.php?path=/v1/$1 last;
+}
+```
+
+若未添加上述规则，`/api/v1/...` 将返回 Nginx 的 404 页面，管理面板的所有 API 功能（如 Markdown 导入/导出）会报 `JSON.parse: unexpected character at line 1 column 1`。管理面板前端已使用 PATH_INFO 形式（`api/index.php/v1/...`）作为兜底，因此即使缺少该规则，面板功能依然可用。
+
 ## 2. 认证与安全
 
 所有请求（公共端点除外）必须携带以下任一凭据：

@@ -8,7 +8,7 @@
 
     function apiRequest(method, path, params) {
         method = method || 'GET';
-        var url = '../api/v1' + path;
+        var url = '../api/index.php/v1' + path;
         var options = {
             method: method,
             credentials: 'same-origin'
