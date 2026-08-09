@@ -236,26 +236,25 @@ CREATE TABLE `blacklist` (
 
 #### 配置 Matrix 账号免考（MAS 提供方）
 
-1. 在 MAS 配置文件的 `oauth.clients` 中静态注册一个客户端（参见 [OAuth 2.0 scopes](https://element-hq.github.io/matrix-authentication-service/reference/scopes.html) 与 [Authorization and sessions](https://element-hq.github.io/matrix-authentication-service/topics/authorization.html)），大致如下：
+1. 确保 MAS 的 OAuth 资源已启用（无需再在 `oauth.clients` 中静态注册客户端——本系统会通过 [OAuth 2.0 动态客户端注册协议（RFC 7591）](https://www.rfc-editor.org/rfc/rfc7591.txt)向 MAS 的 `POST /oauth2/registration` 端点自动注册）。动态注册受 MAS 的 OPA 策略（`policy.data.client_registration`）约束，默认要求 `client_uri` 为 HTTPS 且 `redirect_uris` 与其同主机，生产环境一般无需调整：
 
    ```yaml
-   oauth:
-     clients:
-       - client_id: "exam-oauth"
-         client_auth_method: client_secret_basic
-         client_secret: "…"
-         redirect_uris:
-           - "https://你的部署网站/oauth-matrix.php"
-         grant_types:
-           - authorization_code
-         scope: "openid email"
+   policy:
+     data:
+       client_registration:
+         # 本地测试（如 http://localhost 或 127.0.0.1 回调）时需要放宽以下选项
+         allow_host_mismatch: false
+         allow_insecure_uris: false
+         allow_missing_client_uri: false
    ```
 
-2. 将客户端 ID 和私钥分别填入 `config.php` 中的 `MAS_OAUTH_CLIENT_ID` 与 `MAS_OAUTH_CLIENT_SECRET`，并将 `MAS_OAUTH_ENABLED` 设置为 `true`。OAuth 端点（`/authorize`、`/oauth2/token`、`/oauth2/userinfo`）与注册 Token 管理 API 共用 `MATRIX_API_SITE` 地址。
+2. 在 `config.php` 中将 `MAS_OAUTH_ENABLED` 设置为 `true`（OAuth 端点与管理 API 共用 `MATRIX_API_SITE` 地址）。首次有用户点击「使用 Matrix 账号登录」时，系统将自动注册客户端，注册时提交的回调地址为 `https://你的部署网站/oauth-matrix.php` 与 `https://你的部署网站/admin/oauth-matrix.php`，授权类型为 `authorization_code`，作用域为 `openid email`，凭据（客户端 ID 与 MAS 生成的私钥）保存到 `mas_oauth_clients` 数据表。如果希望沿用静态注册方式，可把 `oauth.clients` 中配置的客户端 ID 与私钥填入 `MAS_OAUTH_CLIENT_ID` 与 `MAS_OAUTH_CLIENT_SECRET`（静态客户端需使用 `client_secret_post` 认证方式，且回调地址需覆盖上述两个路径），此时将跳过动态注册。
 
-3. 重新导入 `table.sql` 以在 `users` 与 `matrix_users` 表中创建免考注解字段（`matrix_oauth_mxid`、`matrix_oauth_verified_at`、`forum_oauth_user_id`、`forum_oauth_verified_at`）。
+3. 重新导入 `table.sql` 以创建 `users` 与 `matrix_users` 表上的免考注解字段（`matrix_oauth_mxid`、`matrix_oauth_verified_at`、`forum_oauth_user_id`、`forum_oauth_verified_at`）及 `mas_oauth_clients` 数据表（动态注册的客户端凭据存放于此）。
 
-如果 `FORUM_OAUTH_ENABLED` 或 `MAS_OAUTH_ENABLED` 为 `false`（或未填写有效客户端凭据），对应的免考入口不会在信息登记页面显示。
+如需重置动态注册的客户端，删除 `mas_oauth_clients` 数据表中的记录即可，下一次点击「使用 Matrix 账号登录」时会重新注册。
+
+如果 `FORUM_OAUTH_ENABLED` 或 `MAS_OAUTH_ENABLED` 为 `false`（或未填写有效的论坛 OAuth 客户端凭据），对应的免考入口不会在信息登记页面显示。
 
 ### 管理面板
 
@@ -268,7 +267,7 @@ CREATE TABLE `blacklist` (
 - **使用社区论坛登录**：需同时满足以下两个条件（缺一不可）：
   1. 论坛账号属于 `ADMIN_GROUP_ID`（默认 `1`，即论坛管理员组）对应的用户组；
   2. 在登录后的验证页面填写的千万桥（MAS）用户名具备 `admin` 属性（通过 MAS 管理 API 校验）。
-- **使用千万桥登录**：仅需满足千万桥账号具备 `admin` 属性（需将 `ADMIN_MAS_OAUTH_ENABLED` 设为 `true`，并确保 MAS 的 OAuth 客户端已追加回调地址 `https://你的部署网站/admin/oauth-matrix.php`）。
+- **使用千万桥登录**：仅需满足千万桥账号具备 `admin` 属性（需将 `ADMIN_MAS_OAUTH_ENABLED` 设为 `true`；动态注册的 MAS 客户端已包含回调地址 `https://你的部署网站/admin/oauth-matrix.php`，若沿用静态注册则需手动为该客户端追加该回调地址）。
 
 任何校验失败都会拒绝访问（fail-closed）。登录会话默认有效期为 120 分钟（`ADMIN_SESSION_LIFETIME`）。
 

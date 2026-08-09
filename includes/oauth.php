@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/version.php';
 require_once __DIR__ . '/security.php';
+require_once __DIR__ . '/db.php';
 
 // 通用 OAuth 2.0 客户端，供以下四套授权流程共用：
 // - oauth-matrix.php：Matrix Authentication Service（MAS）作为 OAuth 提供方，用户登录其
@@ -14,6 +15,11 @@ require_once __DIR__ . '/security.php';
 //
 // 各入口页面只需调用 oauthRunFlow()（传入 oauthMasConfig() / oauthFlarumConfig()
 // 的配置）处理授权流程，并把失败结果映射到各自的提示页即可。
+//
+// 面向 MAS 的客户端凭据优先使用 config.php 中静态配置的 MAS_OAUTH_CLIENT_ID /
+// MAS_OAUTH_CLIENT_SECRET；未配置时，通过 OAuth 2.0 动态客户端注册协议
+// （RFC 7591，POST <MAS>/oauth2/registration）在首次使用时自动注册，并把注册
+// 返回的凭据保存到 mas_oauth_clients 数据表（见 oauthMasCredentials()）。
 
 // 拼接 OAuth 提供方地址（自动补齐 https:// 前缀）
 function oauthSiteUrl(string $site, string $path): string
@@ -51,6 +57,48 @@ function oauthHttpPostForm(string $url, array $fields): ?array
     $data = json_decode($response, true);
     if (json_last_error() !== JSON_ERROR_NONE) {
         error_log("OAuth 请求收到了未知的 JSON 回应：" . $response);
+        return null;
+    }
+
+    return ['status' => $statusCode, 'data' => $data];
+}
+
+// 以 JSON 编码 POST 发起请求（RFC 7591 客户端注册端点），返回 ['status' => int, 'data' => array]，
+// 网络错误或无法解析的响应返回 null。
+function oauthHttpPostJson(string $url, array $payload): ?array
+{
+    $json = json_encode($payload);
+    if ($json === false) {
+        error_log("OAuth 注册请求编码失败：" . json_last_error_msg());
+        return null;
+    }
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'User-Agent: b18-exam/' . VERSION . ' b18-oauth-php/1.0.0',
+    ]);
+    $response = curl_exec($ch);
+    $error = curl_error($ch);
+    $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($error) {
+        error_log("OAuth 注册请求 cURL 错误：" . $error);
+        return null;
+    }
+
+    if (trim($response) === '') {
+        return ['status' => $statusCode, 'data' => []];
+    }
+
+    $data = json_decode($response, true);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        error_log("OAuth 注册请求收到了未知的 JSON 回应：" . $response);
         return null;
     }
 
@@ -224,13 +272,155 @@ function oauthFetchFlarumUser(string $accessToken): ?array
     return oauthFlarumUserFromData($userResult['data']);
 }
 
-// Matrix（MAS）提供方配置，返回的配置直接交给 oauthRunFlow() 使用
+// ---- RFC 7591 动态客户端注册（MAS）----
+
+// 注册请求携带的客户端元数据（RFC 7591 §2）。MAS 的策略要求 client_uri 与
+// redirect_uris 均为同一 HTTPS 主机下的合法地址（本地测试环境需在 MAS 的
+// policy.data.client_registration 中放宽 allow_insecure_uris 等限制）。
+function oauthMasClientMetadata(): array
+{
+    $site = 'https://' . SITE;
+    return [
+        'application_type' => 'web',
+        'client_name' => 'b18-exam 入站测试系统',
+        'client_uri' => $site . '/',
+        'redirect_uris' => [
+            $site . '/oauth-matrix.php',
+            $site . '/admin/oauth-matrix.php',
+        ],
+        'grant_types' => ['authorization_code'],
+        'response_types' => ['code'],
+        'scope' => 'openid email',
+        // 与 oauthExchangeAuthorizationCode() 一致：凭据以表单字段形式提交
+        'token_endpoint_auth_method' => 'client_secret_post',
+    ];
+}
+
+// 通过 RFC 7591 动态客户端注册协议向 MAS 注册客户端，返回
+// ['client_id' => string, 'client_secret' => string]；请求失败、状态码不是
+// 201 或响应缺少凭据时返回 null（fail-closed）。客户端私钥由 MAS 生成。
+function oauthRegisterMasClient(): ?array
+{
+    $result = oauthHttpPostJson(
+        oauthSiteUrl(MATRIX_API_SITE, '/oauth2/registration'),
+        oauthMasClientMetadata()
+    );
+
+    if ($result === null || $result['status'] !== 201 || !isset($result['data']['client_id'])) {
+        $detail = is_array($result) ? json_encode($result['data'], JSON_UNESCAPED_UNICODE) : '网络错误';
+        error_log("MAS OAuth 客户端注册失败：" . $detail);
+        return null;
+    }
+
+    $clientId = $result['data']['client_id'];
+    $clientSecret = isset($result['data']['client_secret']) && is_string($result['data']['client_secret'])
+        ? $result['data']['client_secret']
+        : '';
+
+    if (!is_string($clientId) || $clientId === '' || $clientSecret === '') {
+        error_log("MAS OAuth 客户端注册响应缺少 client_id 或 client_secret");
+        return null;
+    }
+
+    return ['client_id' => $clientId, 'client_secret' => $clientSecret];
+}
+
+// 从 mas_oauth_clients 数据表读取动态注册的客户端凭据，无记录或结构不完整时返回 null
+function oauthMasCredentialsFromDb(): ?array
+{
+    try {
+        $row = getPDO(true)->query('SELECT client_id, client_secret FROM mas_oauth_clients ORDER BY id DESC LIMIT 1')->fetch();
+    } catch (Throwable $e) {
+        error_log("读取 MAS OAuth 客户端凭据失败：" . $e->getMessage());
+        return null;
+    }
+
+    if (!is_array($row) || !is_string($row['client_id'] ?? null) || $row['client_id'] === ''
+        || !is_string($row['client_secret'] ?? null) || $row['client_secret'] === '') {
+        return null;
+    }
+
+    return ['client_id' => $row['client_id'], 'client_secret' => $row['client_secret']];
+}
+
+// 把动态注册获得的客户端凭据保存到 mas_oauth_clients 数据表，失败时返回 false
+function oauthMasStoreCredentials(array $creds): bool
+{
+    try {
+        $stmt = getPDO(true)->prepare('INSERT INTO mas_oauth_clients (client_id, client_secret) VALUES (?, ?)');
+        return $stmt->execute([$creds['client_id'], $creds['client_secret']]);
+    } catch (Throwable $e) {
+        error_log("保存 MAS OAuth 客户端凭据失败：" . $e->getMessage());
+        return false;
+    }
+}
+
+// 解析当前可用的 MAS OAuth 客户端凭据，优先级：
+// 1. config.php 中静态配置的 MAS_OAUTH_CLIENT_ID / MAS_OAUTH_CLIENT_SECRET（兜底）；
+// 2. mas_oauth_clients 数据表中已动态注册的凭据；
+// 3. 通过 RFC 7591 动态客户端注册协议向 MAS 注册并保存。
+// 全部不可用时返回 null（fail-closed）。动态注册过程持有数据库锁
+// （mas_oauth_register），防止并发访问时重复注册产生多个孤儿客户端。
+function oauthMasCredentials(): ?array
+{
+    if (defined('MAS_OAUTH_CLIENT_ID') && defined('MAS_OAUTH_CLIENT_SECRET')
+        && MAS_OAUTH_CLIENT_ID !== '' && strpos(MAS_OAUTH_CLIENT_ID, 'YOUR_') !== 0
+        && MAS_OAUTH_CLIENT_SECRET !== '' && strpos(MAS_OAUTH_CLIENT_SECRET, 'YOUR_') !== 0) {
+        return ['client_id' => MAS_OAUTH_CLIENT_ID, 'client_secret' => MAS_OAUTH_CLIENT_SECRET];
+    }
+
+    $fromDb = oauthMasCredentialsFromDb();
+    if ($fromDb !== null) {
+        return $fromDb;
+    }
+
+    $pdo = null;
+    try {
+        $pdo = getPDO(true);
+        $pdo->query('SELECT GET_LOCK("mas_oauth_register", 10)')->fetchColumn();
+
+        // 持锁后再查一次，另一并发请求可能已经完成注册
+        $fromDb = oauthMasCredentialsFromDb();
+        if ($fromDb !== null) {
+            return $fromDb;
+        }
+
+        $registered = oauthRegisterMasClient();
+        if ($registered === null) {
+            return null;
+        }
+
+        if (oauthMasStoreCredentials($registered)) {
+            return $registered;
+        }
+
+        // 保存失败（如数据表缺失）时仍返回本次注册结果，让当前流程可用，
+        // 但下一次请求会重新注册，故记录日志便于排查
+        error_log("MAS OAuth 客户端凭据保存失败，本次注册的 client_id：" . $registered['client_id']);
+        return $registered;
+    } catch (Throwable $e) {
+        error_log("MAS OAuth 客户端凭据解析失败：" . $e->getMessage());
+        return null;
+    } finally {
+        if ($pdo !== null) {
+            try {
+                $pdo->query('SELECT RELEASE_LOCK("mas_oauth_register")')->fetchColumn();
+            } catch (Throwable $e) {
+                // 释放锁失败不影响流程，连接关闭时锁会自动释放
+            }
+        }
+    }
+}
+
+// Matrix（MAS）提供方配置，返回的配置直接交给 oauthRunFlow() 使用。
+// 客户端凭据通过 oauthMasCredentials() 解析（静态配置优先，否则动态注册）。
 function oauthMasConfig(string $redirectUri): array
 {
+    $credentials = oauthMasCredentials();
     return [
         'site' => MATRIX_API_SITE,
-        'client_id' => MAS_OAUTH_CLIENT_ID,
-        'client_secret' => MAS_OAUTH_CLIENT_SECRET,
+        'client_id' => $credentials['client_id'] ?? '',
+        'client_secret' => $credentials['client_secret'] ?? '',
         'redirect_uri' => $redirectUri,
         'authorize_path' => '/authorize',
         'token_path' => '/oauth2/token',
@@ -391,12 +581,15 @@ function forumOAuthEnabled(): bool
         && defined('FORUM_OAUTH_CLIENT_SECRET') && FORUM_OAUTH_CLIENT_SECRET !== '' && strpos(FORUM_OAUTH_CLIENT_SECRET, 'YOUR_') !== 0;
 }
 
-// Matrix（MAS）OAuth 免考是否已正确配置
+// Matrix（MAS）OAuth 免考是否已启用。仅做配置检查（不发起点点网络或数据库请求），
+// 入口页面据此显示登录入口；实际的客户端凭据由 oauthMasCredentials() 解析：
+// 优先使用 config.php 中静态配置的凭据，否则在首次使用时通过 RFC 7591 动态
+// 客户端注册协议向 MAS 注册并保存到 mas_oauth_clients 数据表。
 function masOAuthEnabled(): bool
 {
     return defined('MAS_OAUTH_ENABLED') && MAS_OAUTH_ENABLED
-        && defined('MAS_OAUTH_CLIENT_ID') && MAS_OAUTH_CLIENT_ID !== '' && strpos(MAS_OAUTH_CLIENT_ID, 'YOUR_') !== 0
-        && defined('MAS_OAUTH_CLIENT_SECRET') && MAS_OAUTH_CLIENT_SECRET !== '' && strpos(MAS_OAUTH_CLIENT_SECRET, 'YOUR_') !== 0;
+        && defined('MATRIX_API_SITE') && MATRIX_API_SITE !== ''
+        && defined('SITE') && SITE !== '';
 }
 
 // 完成 OAuth 验证后跳回信息登记页面（target 用于自动选中对应表单）

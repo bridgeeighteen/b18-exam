@@ -17,12 +17,17 @@ if (!(defined('ADMIN_MAS_OAUTH_ENABLED') && ADMIN_MAS_OAUTH_ENABLED)) {
 }
 
 if (!masOAuthEnabled()) {
-    adminErrorPage('未配置 OAuth 登录', '千万桥 OAuth 登录尚未完成配置（MAS_OAUTH_CLIENT_ID / MAS_OAUTH_CLIENT_SECRET）。\n请在 config.php 中完成配置，并在 MAS 的 OAuth 客户端配置中追加回调地址 https://' . SITE . '/admin/oauth-matrix.php 后重试。');
+    adminErrorPage('未配置 OAuth 登录', '千万桥 OAuth 登录尚未启用（MAS_OAUTH_ENABLED）。\n请在 config.php 中将 MAS_OAUTH_ENABLED 设为 true 并确认 MATRIX_API_SITE 已填写后重试。');
 }
 
 if (currentAdmin() !== null) {
     header('Location: dashboard.php');
     exit;
+}
+
+// 解析客户端凭据：静态配置优先，否则通过 RFC 7591 动态客户端注册协议向 MAS 自动注册
+if (oauthMasCredentials() === null) {
+    adminErrorPage('OAuth 登录失败', "无法获取 Matrix Authentication Service 的 OAuth 客户端凭据。\n请确认 MAS 的 OAuth 资源已启用、策略（policy.data.client_registration）允许本系统的回调地址 https://" . SITE . "/，然后重新尝试登录。");
 }
 
 $result = oauthRunFlow(oauthMasConfig('https://' . SITE . '/admin/oauth-matrix.php'));

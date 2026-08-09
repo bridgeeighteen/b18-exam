@@ -157,6 +157,20 @@ CREATE TABLE `blacklist` (
 -- --------------------------------------------------------
 
 --
+-- 表的结构 `mas_oauth_clients`（RFC 7591 动态客户端注册获得的 MAS OAuth 客户端凭据）
+--
+
+CREATE TABLE `mas_oauth_clients` (
+  `id` int NOT NULL,
+  `client_id` varchar(128) NOT NULL,
+  `client_secret` varchar(128) NOT NULL,
+  `registered_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `last_used_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
 -- 表的结构 `users`
 --
 
@@ -246,6 +260,13 @@ ALTER TABLE `blacklist`
   ADD UNIQUE KEY `email` (`email`);
 
 --
+-- 表的索引 `mas_oauth_clients`
+--
+ALTER TABLE `mas_oauth_clients`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `client_id` (`client_id`);
+
+--
 -- 在导出的表使用AUTO_INCREMENT
 --
 
@@ -301,6 +322,12 @@ ALTER TABLE `audit_log`
 -- 使用表AUTO_INCREMENT `blacklist`
 --
 ALTER TABLE `blacklist`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT = 1;
+
+--
+-- 使用表AUTO_INCREMENT `mas_oauth_clients`
+--
+ALTER TABLE `mas_oauth_clients`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT = 1;
 
 --

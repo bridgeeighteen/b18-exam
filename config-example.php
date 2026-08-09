@@ -65,7 +65,7 @@ define('OAUTH_CLIENT_SECRET', 'YOUR_CLIENT_SECRET'); // OAuth 的应用私钥（
 // 管理面板配置
 define('ADMIN_GROUP_ID', 1); // Flarum 管理员用户组 ID，默认 1（管理员）
 define('ADMIN_SESSION_LIFETIME', 120); // 管理员登录会话有效期，以分钟为单位
-define('ADMIN_MAS_OAUTH_ENABLED', false); // 是否启用“使用千万桥账号登录管理面板”，复用 MAS_OAUTH_CLIENT_* 凭据，需在 MAS 中为该客户端追加回调地址 https://你的部署网站/admin/oauth-matrix.php
+define('ADMIN_MAS_OAUTH_ENABLED', false); // 是否启用“使用千万桥账号登录管理面板”。复用下方 MAS OAuth 免考配置（动态注册的客户端已包含回调地址 https://你的部署网站/admin/oauth-matrix.php）
 
 // API 限流配置
 define('API_RATE_LIMIT_PER_MINUTE', 120); // 每个 API 密钥每分钟最大请求数
@@ -77,9 +77,13 @@ define('FORUM_OAUTH_CLIENT_ID', 'YOUR_FORUM_OAUTH_CLIENT_ID'); // 在 OAuth Cent
 define('FORUM_OAUTH_CLIENT_SECRET', 'YOUR_FORUM_OAUTH_CLIENT_SECRET'); // 上述应用的应用私钥
 
 // Matrix（MAS）OAuth 免考配置（用户在 Matrix Authentication Service 上登录 Matrix 账号后免考礼仪测试）
-// 需要在 MAS 配置文件的 oauth.clients 中静态注册一个客户端，回调地址填 https://你的部署网站/oauth-matrix.php，
-// 授权类型为 authorization_code，作用域为 openid 与 email。OAuth 端点与管理 API 共用 MATRIX_API_SITE 地址。
+// 仅需 MAS_OAUTH_ENABLED 与 MATRIX_API_SITE（OAuth 端点与管理 API 共用该地址）即可：首次使用时会通过
+// OAuth 2.0 动态客户端注册协议（RFC 7591，POST <MAS>/oauth2/registration）自动注册客户端，注册返回的
+// 凭据保存到 mas_oauth_clients 数据表。回调地址自动注册为 https://你的部署网站/oauth-matrix.php 与
+// https://你的部署网站/admin/oauth-matrix.php，授权类型为 authorization_code，作用域为 openid 与 email。
+// 如需沿用 MAS 配置文件中 oauth.clients 的静态注册方式，可把静态客户端 ID 与私钥填入下面两项，
+// 此时将跳过动态注册（两项均需同时填写）。
 define('MAS_OAUTH_ENABLED', false); // 是否启用“使用 Matrix 账号登录（免考礼仪测试）”
-define('MAS_OAUTH_CLIENT_ID', 'YOUR_MAS_OAUTH_CLIENT_ID'); // MAS 中注册的 OAuth 客户端 ID
-define('MAS_OAUTH_CLIENT_SECRET', 'YOUR_MAS_OAUTH_CLIENT_SECRET'); // MAS 中注册的 OAuth 客户端私钥
+define('MAS_OAUTH_CLIENT_ID', 'YOUR_MAS_OAUTH_CLIENT_ID'); // （可选）MAS 中静态注册的 OAuth 客户端 ID，留空使用动态注册
+define('MAS_OAUTH_CLIENT_SECRET', 'YOUR_MAS_OAUTH_CLIENT_SECRET'); // （可选）上述静态注册客户端的私钥，留空使用动态注册
 ?>

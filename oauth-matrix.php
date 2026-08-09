@@ -13,6 +13,11 @@ if (!masOAuthEnabled()) {
     oauthErrorPage('未启用 OAuth 免考', 'Matrix 账号登录（免考礼仪测试）功能尚未启用或尚未完成配置。请稍后重试，或者通过管理邮箱联系我们。');
 }
 
+// 解析客户端凭据：静态配置优先，否则通过 RFC 7591 动态客户端注册协议向 MAS 自动注册
+if (oauthMasCredentials() === null) {
+    oauthErrorPage('OAuth 登录失败', "无法获取 Matrix Authentication Service 的 OAuth 客户端凭据（动态注册失败或 MAS 策略拒绝了本系统的注册请求）。\n请稍后重试，或者通过管理邮箱联系我们。");
+}
+
 $result = oauthRunFlow(oauthMasConfig('https://' . SITE . '/oauth-matrix.php'));
 
 if (!$result['ok']) {
