@@ -25,7 +25,7 @@ require './views/nav.php';
 $forumAvailable = !FORUM_CLOSED;
 $matrixAvailable = MATRIX_ENABLED && !MATRIX_CLOSED;
 ?>
-                <div class="alert alert-danger" role="alert" id="turnstile-error" style="display:none;">Cloudflare Turnstile 的 JavaScript 脚本似乎未正确加载。建议刷新页面重新填写。</div>
+                <div class="alert alert-danger d-none" role="alert" id="turnstile-error">Cloudflare Turnstile 的 JavaScript 脚本似乎未正确加载。建议刷新页面重新填写。</div>
                 <div class="page page-narrow mx-auto">
                     <h1 class="page-title">信息登记</h1>
                     <p class="page-subtitle">在正式开始测试前，请选择你要注册的平台并填写相应的基本信息，以便我们核查邀请码或注册 Token 的使用情况。请记住，将邀请码或注册 Token 转让给他人是绝对禁止的，这会导致账号被封禁。</p>
@@ -36,7 +36,7 @@ $matrixAvailable = MATRIX_ENABLED && !MATRIX_CLOSED;
                                     <h5 class="card-title mb-2">注册社区论坛</h5>
                                     <p class="card-text mb-0">完成入站测试并获得邀请码，用于注册十八桥社区论坛账号。</p>
                                     <?php if (!$forumAvailable) : ?>
-                                    <div class="alert alert-warning mb-0 mt-3" role="alert">测试通道已关闭，原因：<?php echo htmlspecialchars(FORUM_CLOSED_REASON); ?>更多详情请查看社区论坛和联邦宇宙官宣账号。</div>
+                                    <div class="alert alert-warning mb-0 mt-3" role="alert">测试通道已关闭，原因：<?php echo htmlspecialchars(FORUM_CLOSED_REASON); ?> 更多详情请查看社区论坛和联邦宇宙官宣账号。</div>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -48,7 +48,7 @@ $matrixAvailable = MATRIX_ENABLED && !MATRIX_CLOSED;
                                     <h5 class="card-title mb-2">注册<?php echo htmlspecialchars(MATRIX_INSTANCE_NAME); ?></h5>
                                     <p class="card-text mb-0">完成礼仪测试并获得注册 Token，用于在<?php echo htmlspecialchars(MATRIX_INSTANCE_NAME); ?>上注册账号。</p>
                                     <?php if (!$matrixAvailable) : ?>
-                                    <div class="alert alert-warning mb-0 mt-3" role="alert">测试通道已关闭，原因：<?php echo htmlspecialchars(MATRIX_CLOSED_REASON); ?>更多详情请查看社区论坛和联邦宇宙官宣账号。</div>
+                                    <div class="alert alert-warning mb-0 mt-3" role="alert">测试通道已关闭，原因：<?php echo htmlspecialchars(MATRIX_CLOSED_REASON); ?> 更多详情请查看社区论坛和联邦宇宙官宣账号。</div>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -73,7 +73,7 @@ $matrixAvailable = MATRIX_ENABLED && !MATRIX_CLOSED;
                                 <?php endif; ?>
                                 <div class="form-section">
                                     <label for="InputUsername" class="form-label">用户名</label>
-                                    <input type="username" class="form-control" id="InputUsername" aria-describedby="usernameHelp" name="username" required>
+                                    <input type="text" class="form-control" id="InputUsername" aria-describedby="usernameHelp" name="username" required>
                                     <small id="usernameHelp" class="form-text">如果测试通过后想更换，可以在注册时填写。</small>
                                 </div>
                                 <div class="form-section">

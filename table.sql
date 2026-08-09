@@ -141,6 +141,22 @@ CREATE TABLE `api_rate_limits` (
 -- --------------------------------------------------------
 
 --
+-- 表的结构 `blacklist`（测试黑名单，按邮箱为键，一个条目可关联多个 IP）
+--
+
+CREATE TABLE `blacklist` (
+  `id` int NOT NULL,
+  `email` varchar(255) NOT NULL COMMENT '被拉黑的邮箱（统一存为小写）',
+  `ips` text COMMENT '与该邮箱关联的 IP 地址列表（JSON 数组，检测到被拉黑邮箱时自动补充）',
+  `detection_count` int NOT NULL DEFAULT '0' COMMENT '累计检测次数（该邮箱或其任一 IP 被检测到的次数）',
+  `reason` varchar(255) DEFAULT NULL COMMENT '拉黑原因（可选）',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
 -- 表的结构 `users`
 --
 
@@ -223,6 +239,13 @@ ALTER TABLE `api_rate_limits`
   ADD KEY `window_start` (`window_start`);
 
 --
+-- 表的索引 `blacklist`
+--
+ALTER TABLE `blacklist`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `email` (`email`);
+
+--
 -- 在导出的表使用AUTO_INCREMENT
 --
 
@@ -272,6 +295,12 @@ ALTER TABLE `exam_papers`
 -- 使用表AUTO_INCREMENT `audit_log`
 --
 ALTER TABLE `audit_log`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT = 1;
+
+--
+-- 使用表AUTO_INCREMENT `blacklist`
+--
+ALTER TABLE `blacklist`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT = 1;
 
 --

@@ -47,7 +47,7 @@ $queryString = function (array $overrides) use ($filters, $channel) {
 </head>
 <?php require './views/nav.php'; ?>
 <div class="page">
-    <h2 class="page-title">测试信息</h2>
+    <h1 class="page-title">测试信息</h1>
     <p class="page-subtitle">查看各通道的测试记录，通过分数阈值为 <?php echo $threshold; ?> 分。</p>
 
     <ul class="nav nav-tabs mt-4" role="tablist">

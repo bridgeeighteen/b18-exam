@@ -72,7 +72,7 @@ $queryString = function (array $overrides) use ($filters) {
 </head>
 <?php require './views/nav.php'; ?>
 <div class="page">
-    <h2 class="page-title">题目管理</h2>
+    <h1 class="page-title">题目管理</h1>
     <p class="page-subtitle">维护题库：支持手动录入、编辑、删除，以及 Markdown 表格批量导入与导出。</p>
 
     <?php if ($message !== '') : ?>
@@ -141,7 +141,7 @@ $queryString = function (array $overrides) use ($filters) {
                                     <tr data-question-id="<?php echo (int)$question['id']; ?>">
                                         <th scope="row"><?php echo (int)$question['id']; ?></th>
                                         <td><?php echo htmlspecialchars($question['category']); ?></td>
-                                        <td class="text-start" style="max-width: 28rem;"><?php echo htmlspecialchars(mb_strlen($question['question_text']) > 60 ? mb_substr($question['question_text'], 0, 60) . '…' : $question['question_text']); ?></td>
+                                        <td class="text-start question-cell"><?php echo htmlspecialchars(mb_strlen($question['question_text']) > 60 ? mb_substr($question['question_text'], 0, 60) . '…' : $question['question_text']); ?></td>
                                         <td><?php echo $question['type'] === 'single' ? '单选' : '多选'; ?></td>
                                         <td><code><?php echo htmlspecialchars($question['answer']); ?></code></td>
                                         <td><?php echo htmlspecialchars($question['author'] !== '' ? $question['author'] : '—'); ?></td>
@@ -247,7 +247,7 @@ $queryString = function (array $overrides) use ($filters) {
                     </div>
                     <div class="col-12">
                         <button type="button" class="btn btn-primary" id="btn-preview-import">预览</button>
-                        <button type="button" class="btn btn-success d-none" id="btn-confirm-import">确认导入</button>
+                        <button type="button" class="btn btn-primary d-none" id="btn-confirm-import">确认导入</button>
                         <button type="button" class="btn btn-outline-secondary d-none" id="btn-clear-import">清空结果</button>
                     </div>
                 </div>

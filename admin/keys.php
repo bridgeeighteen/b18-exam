@@ -79,6 +79,8 @@ $scopeLabels = [
     'system:read' => '系统信息（只读）',
     'exam:read' => '考试流程（只读：试卷 / 用户名核验）',
     'exam:write' => '考试流程（读写：登记候选人 / 交卷）',
+    'blacklist:read' => '黑名单（只读）',
+    'blacklist:write' => '黑名单（读写）',
 ];
 ?>
 <!DOCTYPE html>
@@ -94,7 +96,7 @@ $scopeLabels = [
 </head>
 <?php require './views/nav.php'; ?>
 <div class="page">
-    <h2 class="page-title">API 密钥</h2>
+    <h1 class="page-title">API 密钥</h1>
     <p class="page-subtitle">管理供外部工具调用的系统 API 密钥。密钥仅以哈希形式存储，明文只在创建时显示一次。</p>
 
     <?php if ($message !== '') : ?>

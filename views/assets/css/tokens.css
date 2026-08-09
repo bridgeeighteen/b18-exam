@@ -3,9 +3,10 @@
  * theme: custom · vibe: "calm crimson, restrained, welcoming" · paper: oklch(96% 0.008 20) · accent: oklch(42% 0.185 16)
  * display: Noto Sans SC 900 · body: Noto Sans SC 400 · axes: light / geometric-sans / warm
  * nav: N1 wordmark+hairline · footer: Ft2 inline · design-system: design.md · designed-as-app
+ * admin: tokens (form-select · nav-tabs · page-link · badges · modal · narrow card) · v1.1.1
  * contrast: pass (40-41) · slop: pass (42-45) · honest: pass (46) · chrome: pass (47)
  * tokens: pass (48) · responsive: pass (49) · mobile: pass (34, 50-57)
- * studied: no · context: explicit · v1.1.0
+ * studied: no · context: explicit · v1.1.1
  */
 
 /* ---------- 1. Design tokens ---------- */
@@ -225,7 +226,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-outline-primary:focus-visible,
-.btn-outline-secondary:focus-visible {
+.btn-outline-secondary:focus-visible,
+.btn-outline-danger:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--color-focus);
 }
@@ -323,6 +325,26 @@ h1, h2, h3, h4, h5, h6 {
   outline: none;
 }
 
+.form-select {
+  border: 1.5px solid var(--color-rule);
+  border-radius: var(--radius-input);
+  padding: 0.625rem 2.25rem 0.625rem 1rem;
+  font-weight: 400;
+  color: var(--color-ink);
+  background-color: var(--color-paper);
+  transition: border-color var(--dur-short) var(--ease-out);
+}
+
+.form-select:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-accent-2) 30%, transparent);
+  background-color: var(--color-paper);
+}
+
+.form-select:focus-visible {
+  outline: none;
+}
+
 /* Base-category chips — visually-hidden input, chip-shaped label */
 .chip-list {
   display: flex;
@@ -416,8 +438,8 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ---------- 8. Badge / timer pill ---------- */
 
-.badge.bg-secondary,
-.timer-pill {
+.timer-pill,
+.exam-bar .badge.bg-secondary {
   background-color: var(--color-accent) !important;
   color: var(--color-accent-ink);
   border-radius: var(--radius-pill);
@@ -430,6 +452,46 @@ h1, h2, h3, h4, h5, h6 {
   display: inline-block;
   min-width: 5.5rem;
   text-align: center;
+}
+
+/* Admin status badges — re-voiced on the accent pair, ink-on-paper system */
+.badge.bg-secondary {
+  background-color: var(--color-paper-2) !important;
+  color: var(--color-muted);
+  font-weight: 500;
+  font-size: var(--text-sm);
+  border: 1px solid var(--color-rule);
+}
+
+.badge.bg-light {
+  background-color: var(--color-paper-2) !important;
+  color: var(--color-ink-2);
+}
+
+.badge.bg-success,
+.badge.bg-danger,
+.badge.bg-warning {
+  font-weight: 600;
+  font-size: var(--text-sm);
+  border: 1px solid transparent;
+}
+
+.badge.bg-success {
+  background-color: color-mix(in oklab, var(--color-accent-2) 14%, var(--color-paper)) !important;
+  color: var(--color-accent-deep) !important;
+  border-color: color-mix(in oklab, var(--color-accent-2) 35%, transparent);
+}
+
+.badge.bg-danger {
+  background-color: color-mix(in oklab, var(--color-accent) 10%, var(--color-paper)) !important;
+  color: var(--color-accent-deep) !important;
+  border-color: color-mix(in oklab, var(--color-accent) 35%, transparent);
+}
+
+.badge.bg-warning {
+  background-color: color-mix(in oklab, var(--color-accent-2) 10%, var(--color-paper)) !important;
+  color: var(--color-ink);
+  border-color: color-mix(in oklab, var(--color-accent-2) 30%, transparent);
 }
 
 /* ---------- 9. Table (exam identity strip) ---------- */
@@ -552,6 +614,10 @@ h1, h2, h3, h4, h5, h6 {
 .form-card {
   max-width: 42rem;
   margin-inline: auto;
+}
+
+.form-card-narrow {
+  max-width: 30rem;
 }
 
 .form-card .card-body {
@@ -717,7 +783,118 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--color-muted);
 }
 
-/* ---------- 16. Responsive discipline ---------- */
+/* ---------- 16. Admin panel ---------- */
+
+.navbar-nav .nav-link.active {
+  color: var(--color-accent) !important;
+}
+
+.nav-tabs {
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.nav-tabs .nav-link {
+  color: var(--color-ink-2);
+  font-weight: 500;
+  border: 1px solid transparent;
+  border-radius: 0;
+  margin-bottom: -1px;
+  padding: var(--space-2xs) var(--space-md);
+  transition: color var(--dur-short) var(--ease-out);
+}
+
+.nav-tabs .nav-link:hover,
+.nav-tabs .nav-link:focus {
+  color: var(--color-accent);
+  border-color: transparent;
+  isolation: isolate;
+}
+
+.nav-tabs .nav-link.active {
+  color: var(--color-accent);
+  font-weight: 600;
+  background-color: var(--color-paper);
+  border-color: var(--color-rule) var(--color-rule) var(--color-paper);
+}
+
+.page-link {
+  color: var(--color-ink-2);
+  background-color: var(--color-paper);
+  border-color: var(--color-rule-2);
+  font-weight: 500;
+  transition: color var(--dur-short) var(--ease-out),
+              background-color var(--dur-short) var(--ease-out),
+              border-color var(--dur-short) var(--ease-out);
+}
+
+.page-link:hover {
+  color: var(--color-accent);
+  background-color: var(--color-paper-2);
+  border-color: var(--color-rule);
+}
+
+.page-link:focus {
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-accent-2) 25%, transparent);
+}
+
+.page-item.active .page-link {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-accent-ink);
+}
+
+.page-item.active .page-link:hover {
+  background-color: var(--color-accent-deep);
+  border-color: var(--color-accent-deep);
+}
+
+.modal-content {
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-card);
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+}
+
+.modal-header {
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.modal-footer {
+  border-top: 1px solid var(--color-rule);
+}
+
+/* Destructive actions — voiced on the brand red pair */
+.btn-danger {
+  --bs-btn-bg: var(--color-accent);
+  --bs-btn-border-color: var(--color-accent);
+  --bs-btn-color: var(--color-accent-ink);
+  --bs-btn-hover-bg: var(--color-accent-deep);
+  --bs-btn-hover-border-color: var(--color-accent-deep);
+  --bs-btn-hover-color: var(--color-accent-ink);
+  --bs-btn-active-bg: var(--color-accent-dark);
+  --bs-btn-active-border-color: var(--color-accent-dark);
+  --bs-btn-active-color: var(--color-accent-ink);
+  --bs-btn-focus-shadow-rgb: var(--color-accent-rgb);
+}
+
+.btn-outline-danger {
+  --bs-btn-color: var(--color-accent-deep);
+  --bs-btn-border-color: var(--color-rule);
+  --bs-btn-hover-color: var(--color-accent-ink);
+  --bs-btn-hover-bg: var(--color-accent-deep);
+  --bs-btn-hover-border-color: var(--color-accent-deep);
+  --bs-btn-active-color: var(--color-accent-ink);
+  --bs-btn-active-bg: var(--color-accent-dark);
+  --bs-btn-active-border-color: var(--color-accent-dark);
+  --bs-btn-focus-shadow-rgb: var(--color-accent-rgb);
+  border-width: 1.5px;
+}
+
+.question-cell {
+  max-width: 28rem;
+}
+
+/* ---------- 17. Responsive discipline ---------- */
 
 @media (max-width: 991.98px) {
   .hero {

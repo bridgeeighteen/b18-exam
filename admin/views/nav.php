@@ -37,6 +37,9 @@ $adminPage = basename($_SERVER['PHP_SELF'] ?? 'index.php');
                             <a class="nav-link <?php echo $adminPage === 'keys.php' ? 'active' : ''; ?>" href="keys.php">API 密钥</a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link <?php echo $adminPage === 'blacklist.php' ? 'active' : ''; ?>" href="blacklist.php">黑名单</a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link <?php echo $adminPage === 'audit.php' ? 'active' : ''; ?>" href="audit.php">审计日志</a>
                         </li>
                     <?php endif; ?>

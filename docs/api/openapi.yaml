@@ -1,10 +1,10 @@
 openapi: 3.0.3
 info:
   title: b18-exam 系统 API
-  version: 1.2.0
+  version: 1.1.0
   description: |
     b18-exam 的统一 RESTful JSON API。覆盖数据统计、题目管理、测试记录、用户、
-    API 密钥与审计日志，以及完整的入站测试流程（候选人登记、试卷获取、交卷计分、
+    API 密钥、黑名单与审计日志，以及完整的入站测试流程（候选人登记、试卷获取、交卷计分、
     邀请码 / 注册 Token 发放）与公共元数据 / 健康检查。
 
     所有响应统一为信封格式：
@@ -31,6 +31,8 @@ tags:
     description: 审计日志
   - name: system
     description: 系统信息
+  - name: blacklist
+    description: 测试黑名单（邮箱 / IP）管理
 
 servers:
   - url: https://your-deployment.example.com/api/v1
@@ -981,6 +983,130 @@ paths:
         '429':
           $ref: '#/components/responses/RateLimited'
 
+  /blacklist:
+    get:
+      tags: [blacklist]
+      summary: 黑名单列表
+      description: 按邮箱或原因关键词筛选，支持分页。
+      security:
+        - bearerAuth: [blacklist:read]
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - name: q
+          in: query
+          description: 关键词（匹配邮箱或原因）
+          schema: { type: string, maxLength: 100 }
+      responses:
+        '200':
+          description: 黑名单条目列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/BlacklistList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    post:
+      tags: [blacklist]
+      summary: 新建黑名单条目
+      description: 邮箱必填且不可修改（条目主键）；IP 列表支持 IPv4 / IPv6，检测到被拉黑邮箱时系统会自动补充访问者 IP。
+      security:
+        - bearerAuth: [blacklist:write]
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlacklistCreateRequest'
+      responses:
+        '201':
+          description: 创建成功，返回新条目
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/BlacklistItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /blacklist/{id}:
+    put:
+      tags: [blacklist]
+      summary: 更新黑名单条目
+      description: 更新 IP 列表与原因；邮箱作为条目主键不可修改。
+      security:
+        - bearerAuth: [blacklist:write]
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlacklistUpdateRequest'
+      responses:
+        '200':
+          description: 更新成功，返回更新后的条目
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/BlacklistItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    delete:
+      tags: [blacklist]
+      summary: 删除黑名单条目
+      security:
+        - bearerAuth: [blacklist:write]
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '204':
+          description: 删除成功
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -1439,6 +1565,8 @@ components:
               - system:read
               - exam:read
               - exam:write
+              - blacklist:read
+              - blacklist:write
         expiry_days: { type: integer, minimum: 0, maximum: 3650, default: 0, description: 有效期（天），0 表示不过期 }
     ApiKeyCreateResponse:
       type: object
@@ -1538,6 +1666,50 @@ components:
         reason:
           type: string
           enum: [available, in_use, invalid_username, mas_unavailable]
+    BlacklistItem:
+      type: object
+      required: [id, email, ips, detection_count, reason, created_at, updated_at]
+      properties:
+        id: { type: integer }
+        email: { type: string, description: 邮箱（小写，条目主键） }
+        ips:
+          type: array
+          items: { type: string, description: IPv4 / IPv6 地址 }
+          description: 关联的 IP 地址列表，检测到被拉黑邮箱时自动补充
+        detection_count: { type: integer, description: 累计检测次数（该邮箱或其任一 IP 被检测到的次数） }
+        reason: { type: string, nullable: true }
+        created_at: { type: string }
+        updated_at: { type: string }
+    BlacklistList:
+      allOf:
+        - $ref: '#/components/schemas/Pagination'
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/BlacklistItem'
+    BlacklistCreateRequest:
+      type: object
+      required: [email, ips]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        ips:
+          type: array
+          minItems: 1
+          items: { type: string }
+          description: 至少一个合法 IP 地址
+        reason: { type: string, maxLength: 255, description: 可选 }
+    BlacklistUpdateRequest:
+      type: object
+      required: [ips]
+      properties:
+        ips:
+          type: array
+          minItems: 1
+          items: { type: string }
+          description: 至少一个合法 IP 地址
+        reason: { type: string, maxLength: 255, description: 可选 }
     Stats:
       type: object
       properties:

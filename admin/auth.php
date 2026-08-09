@@ -195,6 +195,6 @@ function adminErrorPage(string $title, string $message): void
         __DIR__ . '/views/footer.php',
         'index.php',
         '返回登录',
-        'form-card mx-auto'
+        'form-card form-card-narrow mx-auto'
     );
 }

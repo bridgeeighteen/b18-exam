@@ -454,7 +454,7 @@ function oauthRenderErrorPage(
     <div class="page">
         <div class="card <?php echo $cardClass; ?>">
             <div class="card-body">
-                <h2 class="page-title"><?php echo htmlspecialchars($title); ?></h2>
+                <h1 class="page-title"><?php echo htmlspecialchars($title); ?></h1>
                 <div class="alert alert-danger mt-4" role="alert"><?php echo nl2br(htmlspecialchars($message)); ?></div>
                 <p class="card-text">如果此问题持续存在，请截屏此页面然后向<a
                         href="javascript:location.href = 'mailto:' + ['<?php echo htmlspecialchars($name); ?>','<?php echo htmlspecialchars($domain); ?>'].join('@')">管理邮箱</a>发送电子邮件。</p>

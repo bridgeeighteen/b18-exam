@@ -9,6 +9,7 @@ initSecurity();
 
 $timeCheatDetected = false;
 $etiquetteExempt = false;
+$resultError = null;
 $score = null;
 $invitationCode = null;
 $userId = null;
@@ -28,7 +29,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if ($submission['error']['code'] === 'time_violation') {
             $timeCheatDetected = true;
         } else {
-            die('错误：' . $submission['error']['message']);
+            $resultError = '错误：' . $submission['error']['message'];
         }
     } else {
         $score = $submission['score'];
@@ -54,6 +55,15 @@ sendSecurityHeaders();
 
 <?php require './views/nav.php'; ?>
                 <div class="page">
+                <?php if ($resultError !== null) : ?>
+                    <div class="card form-card mx-auto">
+                        <div class="card-body">
+                            <h1 class="page-title">无法获取结果</h1>
+                            <div class="alert alert-danger mt-4" role="alert"><?php echo nl2br(htmlspecialchars($resultError)); ?></div>
+                            <a class="btn btn-primary" href="info.php" role="button">返回信息登记</a>
+                        </div>
+                    </div>
+                <?php else : ?>
                     <div class="card result-card">
                         <div class="card-body">
                             <h1 class="page-title">测试结果</h1>
@@ -78,5 +88,6 @@ sendSecurityHeaders();
                             <?php endif; ?>
                         </div>
                     </div>
+                <?php endif; ?>
                 </div>
 <?php require './views/footer.php'; ?>

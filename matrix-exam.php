@@ -107,7 +107,7 @@ sendSecurityHeaders();
 <?php
 require './views/nav.php';
 if (MATRIX_CLOSED) {
-    echo '<div class="alert alert-warning" role="alert">测试通道已关闭，原因：' . MATRIX_CLOSED_REASON . '更多详情请查看社区论坛和联邦宇宙官宣账号。</div>';
+    echo '<div class="alert alert-warning" role="alert">测试通道已关闭，原因：' . MATRIX_CLOSED_REASON . ' 更多详情请查看社区论坛和联邦宇宙官宣账号。</div>';
     include './views/footer.php';
     exit;
 } elseif ($forumOauthExempt && $user !== null && empty($questions)) {
@@ -202,6 +202,7 @@ if (MATRIX_CLOSED) {
 
 <form id="matrixExamForm" action="matrix-result.php" method="post">
     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generateCSRFToken()); ?>">
+    <input type="hidden" name="user_id" value="<?php echo htmlspecialchars(isset($user['id']) ? $user['id'] : '', ENT_QUOTES, 'UTF-8'); ?>">
     <?php
     $questionNumber = 1; // 初始化题号
     foreach ($questions as $question) {
@@ -209,8 +210,6 @@ if (MATRIX_CLOSED) {
                     <div class="card question-card">
                         <div class="card-body">
                             <h5 class="question-text">' . htmlspecialchars($questionNumber) . '. ' . htmlspecialchars($question['question_text']) . '</h5>';
-        echo '
-                            <input type="hidden" name="user_id" value="' . htmlspecialchars(isset($user['id']) ? $user['id'] : '', ENT_QUOTES, 'UTF-8') . '">';
         echo '
                             <input type="hidden" name="question_' . htmlspecialchars($question['id']) . '" value="' . htmlspecialchars($question['id']) . '">';
 

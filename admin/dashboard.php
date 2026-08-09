@@ -30,7 +30,7 @@ $config = $stats['config'];
 </head>
 <?php require './views/nav.php'; ?>
 <div class="page">
-    <h2 class="page-title">数据统计</h2>
+    <h1 class="page-title">数据统计</h1>
     <p class="page-subtitle">你好，<?php echo htmlspecialchars($admin['identity_label']); ?>。以下是入站测试系统的最新数据概况。</p>
 
     <?php if ($config['forum_closed']) : ?>

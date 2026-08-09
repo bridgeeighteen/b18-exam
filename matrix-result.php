@@ -10,6 +10,7 @@ initSecurity();
 
 $timeCheatDetected = false;
 $tokenError = false;
+$resultError = null;
 $score = null;
 $registrationToken = null;
 $userId = null;
@@ -35,23 +36,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $oauthExempt = true;
         } else {
             http_response_code(403);
-            die('免考验证失败。请返回信息登记页面重新进行论坛账号登录，然后重试。');
+            $resultError = '免考验证失败。请返回信息登记页面重新进行论坛账号登录，然后重试。';
         }
     }
 
-    $submission = scoreSubmission('matrix', $userId, extractAnswerMap($_POST));
+    if ($resultError === null) {
+        $submission = scoreSubmission('matrix', $userId, extractAnswerMap($_POST));
 
-    if (isset($submission['error'])) {
-        if ($submission['error']['code'] === 'time_violation') {
-            $timeCheatDetected = true;
+        if (isset($submission['error'])) {
+            if ($submission['error']['code'] === 'time_violation') {
+                $timeCheatDetected = true;
+            } else {
+                $resultError = '错误：' . $submission['error']['message'];
+            }
         } else {
-            die('错误：' . $submission['error']['message']);
+            $score = $submission['score'];
+            $registrationToken = $submission['credential']['value'];
+            $oauthExempt = $submission['etiquette_exempt'];
+            $tokenError = $submission['passed'] && $submission['credential']['error'] !== null;
         }
-    } else {
-        $score = $submission['score'];
-        $registrationToken = $submission['credential']['value'];
-        $oauthExempt = $submission['etiquette_exempt'];
-        $tokenError = $submission['passed'] && $submission['credential']['error'] !== null;
     }
 }
 
@@ -72,6 +75,15 @@ sendSecurityHeaders();
 
 <?php require './views/nav.php'; ?>
                 <div class="page">
+                <?php if ($resultError !== null) : ?>
+                    <div class="card form-card mx-auto">
+                        <div class="card-body">
+                            <h1 class="page-title">无法获取结果</h1>
+                            <div class="alert alert-danger mt-4" role="alert"><?php echo nl2br(htmlspecialchars($resultError)); ?></div>
+                            <a class="btn btn-primary" href="info.php" role="button">返回信息登记</a>
+                        </div>
+                    </div>
+                <?php else : ?>
                     <div class="card result-card">
                         <div class="card-body">
                             <h1 class="page-title">测试结果</h1>
@@ -102,5 +114,6 @@ sendSecurityHeaders();
                             <?php endif; ?>
                         </div>
                     </div>
+                <?php endif; ?>
                 </div>
 <?php require './views/footer.php'; ?>

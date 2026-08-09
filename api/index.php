@@ -6,6 +6,7 @@ require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/api.php';
 require_once __DIR__ . '/../includes/markdown-import.php';
 require_once __DIR__ . '/../includes/admin-data.php';
+require_once __DIR__ . '/../includes/blacklist.php';
 require_once __DIR__ . '/../includes/exam-service.php';
 require_once __DIR__ . '/../includes/matrix-api.php';
 require_once __DIR__ . '/../includes/oauth.php';
@@ -51,6 +52,10 @@ const API_V1_ROUTES = [
     ['POST', '/v1/candidates/{id}/submissions', 'exam:write', 'handleCandidateSubmit', 'candidates:submit'],
     ['DELETE', '/v1/candidates/{id}', 'exam:write', 'handleCandidateDelete', 'candidates:delete'],
     ['GET', '/v1/matrix/usernames/{name}/availability', 'exam:read', 'handleMatrixUsernameAvailability', null],
+    ['GET', '/v1/blacklist', 'blacklist:read', 'handleBlacklistList', null],
+    ['POST', '/v1/blacklist', 'blacklist:write', 'handleBlacklistCreate', 'blacklist:create'],
+    ['PUT', '/v1/blacklist/{id}', 'blacklist:write', 'handleBlacklistUpdate', 'blacklist:update'],
+    ['DELETE', '/v1/blacklist/{id}', 'blacklist:write', 'handleBlacklistDelete', 'blacklist:delete'],
 ];
 
 $path = apiRequestPath();
@@ -573,7 +578,7 @@ function handleCandidateCreate(array $params): void
     }
 
     if (isset($result['error'])) {
-        $statusMap = ['username_in_use' => 409, 'mas_unavailable' => 503, 'not_found' => 404];
+        $statusMap = ['username_in_use' => 409, 'mas_unavailable' => 503, 'not_found' => 404, 'blacklisted' => 403];
         apiError($statusMap[$result['error']['code']] ?? 422, $result['error']['code'], $result['error']['message']);
     }
     if (!empty($result['errors'])) {
@@ -624,7 +629,7 @@ function handleCandidateSubmit(array $params): void
 
     $submission = scoreSubmission($channel, (int)($params['id'] ?? 0), $answers);
     if (isset($submission['error'])) {
-        $statusMap = ['not_found' => 404, 'time_violation' => 409, 'no_paper' => 409];
+        $statusMap = ['not_found' => 404, 'time_violation' => 409, 'no_paper' => 409, 'blacklisted' => 403];
         apiError($statusMap[$submission['error']['code']] ?? 422, $submission['error']['code'], $submission['error']['message']);
     }
 
@@ -649,4 +654,64 @@ function handleMatrixUsernameAvailability(array $params): void
     }
 
     apiRespond(['username' => $username, 'available' => !$inUse, 'reason' => $inUse ? 'in_use' : 'available']);
+}
+
+// ---------- 黑名单 ----------
+
+function handleBlacklistList(array $params): void
+{
+    $filters = [
+        'q' => apiString('q', '', 100),
+    ];
+    $pagination = apiPaginationParams(20);
+    $data = listBlacklistEntries($filters, $pagination['page'], $pagination['per_page']);
+    apiPaginationLinkHeader($pagination['page'], $pagination['per_page'], $data['pages']);
+    apiRespond($data);
+}
+
+function handleBlacklistCreate(array $params): void
+{
+    $email = apiString('email', '', 254);
+    $ips = array_values(array_filter((array)(apiBody()['ips'] ?? []), 'is_string'));
+    $reason = apiString('reason', '', 255);
+
+    if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+        apiError(422, 'validation_failed', '电子邮箱地址格式不正确。');
+    }
+    if (normalizeBlacklistIps($ips) === []) {
+        apiError(422, 'validation_failed', 'IP 地址列表为空或均不合法。');
+    }
+
+    $result = createBlacklistEntry($email, $ips, $reason);
+    if (isset($result['error'])) {
+        apiError(409, 'duplicate', $result['error']);
+    }
+
+    header('Location: ' . apiBaseUrl() . '/v1/blacklist/' . $result['id']);
+    apiRespond(getBlacklistEntry($result['id']), 201);
+}
+
+function handleBlacklistUpdate(array $params): void
+{
+    $id = (int)($params['id'] ?? 0);
+    $ips = array_values(array_filter((array)(apiBody()['ips'] ?? []), 'is_string'));
+    $reason = apiString('reason', '', 255);
+
+    if (getBlacklistEntry($id) === null) {
+        apiError(404, 'not_found', '黑名单条目不存在。');
+    }
+    if (normalizeBlacklistIps($ips) === []) {
+        apiError(422, 'validation_failed', 'IP 地址列表为空或均不合法。');
+    }
+
+    updateBlacklistEntry($id, $ips, $reason);
+    apiRespond(getBlacklistEntry($id));
+}
+
+function handleBlacklistDelete(array $params): void
+{
+    if (!deleteBlacklistEntry((int)($params['id'] ?? 0))) {
+        apiError(404, 'not_found', '黑名单条目不存在。');
+    }
+    apiNoContent();
 }

@@ -21,6 +21,8 @@ const API_ALLOWED_SCOPES = [
     'system:read',
     'exam:read',
     'exam:write',
+    'blacklist:read',
+    'blacklist:write',
 ];
 
 // 输出 JSON 并终止脚本

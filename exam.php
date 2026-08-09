@@ -15,6 +15,7 @@ if (DB_TIMEZONE_LOCK) {
 $matrixMxid = null;
 $user = null;
 $questions = [];
+$examError = null;
 
 if (FORUM_CLOSED) {
 } else {
@@ -22,12 +23,9 @@ if (FORUM_CLOSED) {
         $turnstile = verifyTurnstileToken((string)($_POST['cf-turnstile-response'] ?? ''));
 
         if ($turnstile['error'] !== null) {
-            echo $turnstile['error'];
-            exit;
-        }
-
-        if ($turnstile['warning'] !== null) {
-            echo $turnstile['warning'];
+            $examError = $turnstile['error'];
+        } elseif ($turnstile['warning'] !== null) {
+            $examError = $turnstile['warning'];
         }
 
         // 已通过 Matrix 账号 OAuth 验证且邮箱一致的用户，免考基本礼仪题
@@ -37,27 +35,29 @@ if (FORUM_CLOSED) {
             $matrixMxid = $matrixOauth['mxid'];
         }
 
-        $result = registerForumCandidate(
-            (string)($_POST['username'] ?? ''),
-            $email,
-            (array)($_POST['categories'] ?? []),
-            $matrixMxid
-        );
+        if ($examError === null) {
+            $result = registerForumCandidate(
+                (string)($_POST['username'] ?? ''),
+                $email,
+                (array)($_POST['categories'] ?? []),
+                $matrixMxid
+            );
 
-        if (isset($result['error'])) {
-            die('错误：' . $result['error']['message']);
-        }
-        if (!empty($result['errors'])) {
-            die('错误：' . implode(' ', $result['errors']));
-        }
+            if (isset($result['error'])) {
+                $examError = '错误：' . $result['error']['message'];
+            } elseif (!empty($result['errors'])) {
+                $examError = '错误：' . implode(' ', $result['errors']);
+            } else {
+                $user = $result['candidate'];
 
-        $user = $result['candidate'];
-
-        $paperResult = buildExamPaper('forum', (int)$user['id']);
-        if (isset($paperResult['error'])) {
-            die($paperResult['error']['message']);
+                $paperResult = buildExamPaper('forum', (int)$user['id']);
+                if (isset($paperResult['error'])) {
+                    $examError = $paperResult['error']['message'];
+                } else {
+                    $questions = $paperResult['paper']['questions'];
+                }
+            }
         }
-        $questions = $paperResult['paper']['questions'];
     }
 }
 
@@ -103,10 +103,25 @@ sendSecurityHeaders();
 <?php
 require './views/nav.php';
 if (FORUM_CLOSED) {
-    echo '<div class="alert alert-warning" role="alert">测试通道已关闭，原因：' . FORUM_CLOSED_REASON . '更多详情请查看社区论坛和联邦宇宙官宣账号。</div>';
+    echo '<div class="alert alert-warning" role="alert">测试通道已关闭，原因：' . FORUM_CLOSED_REASON . ' 更多详情请查看社区论坛和联邦宇宙官宣账号。</div>';
     include './views/footer.php';
     exit;
 } else {
+}
+if ($examError !== null) {
+?>
+<div class="page page-narrow mx-auto">
+    <div class="card form-card mt-4">
+        <div class="card-body">
+            <h1 class="page-title">无法开始测试</h1>
+            <div class="alert alert-danger" role="alert"><?php echo nl2br(htmlspecialchars($examError)); ?></div>
+            <a class="btn btn-primary" href="info.php" role="button">返回信息登记</a>
+        </div>
+    </div>
+</div>
+<?php
+    include './views/footer.php';
+    exit;
 }
 ?>
 <div class="exam-bar">
@@ -147,6 +162,7 @@ if (FORUM_CLOSED) {
 
 <form id="examForm" action="result.php" method="post">
     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generateCSRFToken()); ?>">
+    <input type="hidden" name="user_id" value="<?php echo htmlspecialchars(isset($user['id']) ? $user['id'] : '', ENT_QUOTES, 'UTF-8'); ?>">
     <?php
     $questionNumber = 1; // 初始化题号
     foreach ($questions as $question) {
@@ -154,8 +170,6 @@ if (FORUM_CLOSED) {
                     <div class="card question-card">
                         <div class="card-body">
                             <h5 class="question-text">' . htmlspecialchars($questionNumber) . '. ' . htmlspecialchars($question['question_text']) . '</h5>';
-        echo '
-                            <input type="hidden" name="user_id" value="' . htmlspecialchars(isset($user['id']) ? $user['id'] : '', ENT_QUOTES, 'UTF-8') . '">';
         echo '
                             <input type="hidden" name="question_' . htmlspecialchars($question['id']) . '" value="' . htmlspecialchars($question['id']) . '">';
 

@@ -39,7 +39,7 @@ $queryString = function (array $overrides) use ($filters) {
 </head>
 <?php require './views/nav.php'; ?>
 <div class="page">
-    <h2 class="page-title">审计日志</h2>
+    <h1 class="page-title">审计日志</h1>
     <p class="page-subtitle">记录管理员面板与系统 API 的关键变更操作。</p>
 
     <form method="get" action="audit.php" class="row g-2 mt-3 align-items-end">

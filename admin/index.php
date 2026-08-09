@@ -27,9 +27,9 @@ $masLoginAvailable = defined('ADMIN_MAS_OAUTH_ENABLED') && ADMIN_MAS_OAUTH_ENABL
 </head>
 <?php require './views/nav.php'; ?>
 <div class="page">
-    <div class="card form-card mx-auto">
+    <div class="card form-card form-card-narrow mx-auto">
         <div class="card-body">
-            <h2 class="page-title">管理员登录</h2>
+            <h1 class="page-title">管理员登录</h1>
             <p class="page-subtitle">管理面板仅限管理员访问。使用社区论坛登录时，需同时拥有社区论坛与千万桥的管理员权限；使用千万桥登录时，需拥有千万桥的管理员权限。</p>
             <div class="form-section">
                 <a class="btn btn-primary btn-lg w-100" href="oauth.php">使用社区论坛 OAuth 登录</a>

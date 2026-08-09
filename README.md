@@ -165,13 +165,7 @@ CREATE TABLE `api_rate_limits` (
   PRIMARY KEY (`bucket`),
   KEY `window_start` (`window_start`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-```
 
-### 从旧版本升级（v1.1.0 → v1.2.0）
-
-v1.2.0 引入了持久化试卷表 `exam_papers`（答题页与系统 API 共用，用于保证交卷按出卷题目计分、免考状态由服务端记录）。请手动执行以下 SQL：
-
-```sql
 CREATE TABLE `exam_papers` (
   `id` int NOT NULL AUTO_INCREMENT,
   `channel` enum('forum','matrix') NOT NULL,
@@ -183,7 +177,21 @@ CREATE TABLE `exam_papers` (
   PRIMARY KEY (`id`),
   KEY `channel_candidate` (`channel`,`candidate_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `blacklist` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `email` varchar(255) NOT NULL COMMENT '被拉黑的邮箱（统一存为小写）',
+  `ips` text COMMENT '与该邮箱关联的 IP 地址列表（JSON 数组，检测到被拉黑邮箱时自动补充）',
+  `detection_count` int NOT NULL DEFAULT '0' COMMENT '累计检测次数（该邮箱或其任一 IP 被检测到的次数）',
+  `reason` varchar(255) DEFAULT NULL COMMENT '拉黑原因（可选）',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
+
+其中 `exam_papers` 为持久化试卷表（答题页与系统 API 共用，用于保证交卷按出卷题目计分、免考状态由服务端记录），`blacklist` 为测试黑名单表（按邮箱拉黑并自动记录访问 IP、累计检测次数）。
 
 同时，系统 API 已从 `?resource=&action=` 调用方式迁移为 RESTful 风格（`/api/v1/...`），详见下文「系统 API」。`api/index.php` 不再接受旧的 `resource` / `action` 参数。`.htaccess` 已包含 `/api/v1/` 的重写规则；若使用 Nginx，请将 `/api/v1/(.*)` 重写为 `api/index.php?path=/v1/$1`，或将请求直接指向 `api/index.php/v1/...`（PATH_INFO 方式）。
 
@@ -253,7 +261,7 @@ CREATE TABLE `exam_papers` (
 
 ### 管理面板
 
-管理面板位于 `/admin/`，包含数据统计、测试信息、题目管理（手动录入 / Markdown 导入 / 导出）、API 密钥管理与审计日志。
+管理面板位于 `/admin/`，包含数据统计、测试信息、题目管理（手动录入 / Markdown 导入 / 导出）、API 密钥管理、黑名单管理与审计日志。
 
 #### 访问权限
 
@@ -283,7 +291,7 @@ CREATE TABLE `exam_papers` (
 
 #### 系统 API
 
-系统提供统一的 RESTful JSON API（`/api/v1/...`），覆盖管理端的数据统计、题目管理、测试记录、用户、API 密钥与审计日志，以及完整的入站测试流程（候选人登记、试卷获取、交卷计分与邀请码 / 注册 Token 发放）。API 供外部工具（如论坛机器人、监控服务）与管理面板共用。
+系统提供统一的 RESTful JSON API（`/api/v1/...`），覆盖管理端的数据统计、题目管理、测试记录、用户、API 密钥、黑名单与审计日志，以及完整的入站测试流程（候选人登记、试卷获取、交卷计分与邀请码 / 注册 Token 发放）。API 供外部工具（如论坛机器人、监控服务）与管理面板共用。
 
 **文档**：完整的 API 文档已独立成册 —— 人读指南见 [`docs/api.md`](docs/api.md)（认证、作用域、端点参考、示例与集成场景），机器可读规范见 [`docs/api/openapi.yaml`](docs/api/openapi.yaml)（OpenAPI 3.0，可用 Swagger UI / Redoc 渲染）。
 
@@ -305,6 +313,7 @@ CREATE TABLE `exam_papers` (
 | `keys:admin` | API 密钥与审计日志管理 |
 | `system:read` | 系统信息（只读） |
 | `exam:read` / `exam:write` | 考试流程：试卷与候选人查询 / 登记、交卷与删除 |
+| `blacklist:read` / `blacklist:write` | 黑名单查询 / 增删改 |
 
 **端点一览**（完整参数与示例见 [`docs/api.md`](docs/api.md)）：
 
@@ -325,6 +334,8 @@ CREATE TABLE `exam_papers` (
 | `GET /api/v1/candidates/{id}/paper?channel=forum` | 获取已生成的试卷（题目不含答案） |
 | `POST /api/v1/candidates/{id}/submissions` | 交卷计分，返回分数与邀请码 / 注册 Token |
 | `GET /api/v1/matrix/usernames/{name}/availability` | 核验 Matrix 用户名是否可用（免考流程使用） |
+| `GET /api/v1/blacklist` · `POST /api/v1/blacklist` | 黑名单列表（筛选 `q`）/ 新建（请求体 `email` 必填，`ips` 支持多个 IP） |
+| `PUT /api/v1/blacklist/{id}` · `DELETE /api/v1/blacklist/{id}` | 更新（IP 列表与原因）/ 删除黑名单条目 |
 
 常用示例：
 
@@ -377,9 +388,10 @@ curl -H "$AUTH" "$BASE/matrix/usernames/zhangsan/availability"
 - [x] 支持 Matrix 实例注册测试通道（基于 Matrix Authentication Service 管理 API）
 - [x] 支持 Matrix 账号 OAuth 登录免考论坛测试中的基本礼仪题（MAS 作为 OAuth 提供方）
 - [x] 支持论坛账号 OAuth 登录免考 Matrix 礼仪测试（FoskyM OAuth Center 作为 OAuth 提供方）
-- [x] 管理面板：数据统计、测试信息、题目管理（手动录入 / 编辑 / 删除 / Markdown 表格导入导出）
+- [x] 管理面板：数据统计、测试信息、题目管理（手动录入 / 编辑 / 删除 / Markdown 表格导入导出）、黑名单管理
 - [x] 管理面板双平台管理员校验（论坛 OAuth 路径需同时为论坛管理员与千万桥管理员）
 - [x] 系统 REST API（`/api/v1/...`，覆盖管理端与完整考试流程、API 密钥、作用域、限流、审计日志）
+- [x] 测试黑名单：按邮箱拉黑（支持关联多个 IP），命中时拒绝登记与交卷并自动记录访问 IP、累计检测次数
 
 你也可以到 [Open Issues](https://codeberg.org/bridgeeighteen/b18-exam/issues) 页查看所有请求的功能（以及已知的问题）。
 

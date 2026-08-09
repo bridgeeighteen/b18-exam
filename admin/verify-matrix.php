@@ -63,9 +63,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <?php require './views/nav.php'; ?>
 <div class="page">
-    <div class="card form-card mx-auto">
+    <div class="card form-card form-card-narrow mx-auto">
         <div class="card-body">
-            <h2 class="page-title">验证千万桥账号</h2>
+            <h1 class="page-title">验证千万桥账号</h1>
             <p class="page-subtitle">你已通过社区论坛 OAuth 登录（账号：<strong><?php echo htmlspecialchars($pending['username']); ?></strong>）。管理面板要求同时拥有社区论坛与千万桥的管理员权限，请填写你的千万桥用户名（无需 @ 与域名部分）以完成验证。</p>
             <?php if ($error !== null) : ?>
                 <div class="alert alert-danger mt-4" role="alert"><?php echo htmlspecialchars($error); ?></div>

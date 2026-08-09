@@ -1,6 +1,6 @@
 # b18-exam 系统 API 指南
 
-b18-exam 提供统一的 RESTful JSON API（`/api/v1/...`），覆盖数据统计、题目管理、测试记录、用户与候选人、API 密钥与审计日志，以及完整的入站测试流程（候选人登记 → 试卷获取 → 交卷计分 → 邀请码 / 注册 Token 发放）。
+b18-exam 提供统一的 RESTful JSON API（`/api/v1/...`），覆盖数据统计、题目管理、测试记录、用户与候选人、API 密钥、黑名单与审计日志，以及完整的入站测试流程（候选人登记 → 试卷获取 → 交卷计分 → 邀请码 / 注册 Token 发放）。
 
 - 机器可读规范（OpenAPI 3.0）：[docs/api/openapi.yaml](openapi.yaml)，可用 Swagger UI / Redoc 等工具直接渲染。
 - API 供外部工具（如论坛机器人、监控服务）与管理面板共用。
@@ -52,6 +52,8 @@ API 密钥在创建时选择作用域。所有作用域：
 | `system:read` | 系统信息（只读） |
 | `exam:read` | 考试流程只读：试卷获取、候选人列表与详情、用户名核验 |
 | `exam:write` | 考试流程写：候选人登记、交卷、删除候选人 |
+| `blacklist:read` | 黑名单（只读） |
+| `blacklist:write` | 黑名单（读写） |
 
 ## 3. 请求与响应
 
@@ -94,7 +96,7 @@ API 密钥在创建时选择作用域。所有作用域：
 | --- | --- | --- |
 | 400 | — | — |
 | 401 | `invalid_key` / `unauthenticated` | 密钥无效 / 会话过期 |
-| 403 | `https_required` / `key_disabled` / `key_expired` / `forbidden` / `csrf_failed` | 安全或权限类错误 |
+| 403 | `https_required` / `key_disabled` / `key_expired` / `forbidden` / `csrf_failed` / `blacklisted` | 安全或权限类错误 / 命中测试黑名单 |
 | 404 | `not_found` | 资源、路径或接口版本不存在 |
 | 405 | `method_not_allowed` | 该路径不支持请求方法（附 `Allow` 头） |
 | 409 | `duplicate` / `username_in_use` / `time_violation` / `no_paper` | 冲突（重复题目、用户名占用、超时交卷、未出卷） |
@@ -118,7 +120,7 @@ curl https://你的部署网站/api/v1/health
 ```
 
 ```json
-{ "ok": true, "data": { "status": "ok", "version": "1.2.0", "db": "ok", "time": "2026-08-09 12:00:00" } }
+{ "ok": true, "data": { "status": "ok", "version": "1.1.0", "db": "ok", "time": "2026-08-09 12:00:00" } }
 ```
 
 数据库不可用时返回 `503` 且 `status` 为 `degraded`。
@@ -131,7 +133,7 @@ curl https://你的部署网站/api/v1/health
 {
   "ok": true,
   "data": {
-    "version": "1.2.0",
+    "version": "1.1.0",
     "channels": {
       "forum":  { "enabled": true,  "duration_minutes": 20, "score_threshold": 80, "score_correct": 5, "score_partial": 2 },
       "matrix": { "enabled": true,  "instance_name": "千万桥", "duration_minutes": 10, "score_threshold": 80, "score_correct": 5, "score_partial": 2 }
@@ -270,6 +272,33 @@ curl -X POST -H "$AUTH" -H "Content-Type: application/json" \
 ### 4.8 系统信息（`system:read`）
 
 `GET /system`：版本、PHP 版本、通道开关与考试计分配置（只读，不含敏感信息）。公共的 `GET /meta` 覆盖其中非敏感部分。
+
+### 4.9 黑名单（`blacklist:read` / `blacklist:write`）
+
+| 方法与路径 | 说明 |
+| --- | --- |
+| `GET /blacklist` | 列表：`q`（匹配邮箱或原因），分页 |
+| `POST /blacklist` | 新建：`{"email":"...","ips":["1.2.3.4","2001:db8::1"],"reason":"可选"}`，邮箱必填且不可修改 |
+| `PUT /blacklist/{id}` | 整体更新：`{"ips":[...],"reason":"..."}`（邮箱作为条目主键不可修改） |
+| `DELETE /blacklist/{id}` | 删除 |
+
+条目对象：
+
+```json
+{
+  "id": 1,
+  "email": "blacklisted@example.com",
+  "ips": ["1.2.3.4", "2001:db8::1"],
+  "detection_count": 3,
+  "reason": "邀请码滥用",
+  "created_at": "2026-08-09 12:00:00",
+  "updated_at": "2026-08-09 12:00:00"
+}
+```
+
+- 黑名单在候选人登记与交卷时生效：命中条目（邮箱或访问者 IP）的请求返回 `403 blacklisted`；
+- 检测到被拉黑邮箱时，系统自动将访问者 IP 补充进该条目（若尚不存在），并累计该条目的 `detection_count`；IP 命中时同样累计其所属条目的检测次数；
+- 邮箱比较不区分大小写（存储为小写）。
 
 ## 5. 完整考试流程演练
 
