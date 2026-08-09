@@ -8,7 +8,7 @@ $adminPage = basename($_SERVER['PHP_SELF'] ?? 'index.php');
             <a class="navbar-brand" href="../index.php">
                 <img src="../views/assets/logo_text.svg" height="25" class="d-inline-block align-text-bottom"
                     alt="十八桥社区">
-                论坛入站测试系统
+                入站测试系统
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">

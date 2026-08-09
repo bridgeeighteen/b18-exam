@@ -5,10 +5,10 @@
     <img src="views/assets/logo_text.svg" alt="十八桥社区" height="60">
   </a>
 
-<h3 align="center">论坛入站测试系统</h3>
+<h3 align="center">入站测试系统</h3>
 
   <p align="center">
-    十八桥社区论坛使用的入站测试系统，基于 Bootstrap 和 PHP。
+    十八桥社区使用的入站测试系统，基于 Bootstrap 和 PHP。
     <br />
     <br />
     <a href="https://codeberg.org/bridgeeighteen/b18-exam/issues">反馈 Bug</a>
@@ -55,7 +55,7 @@
 <!-- 关于本项目 -->
 ## 关于本项目
 
-这是十八桥社区论坛的入站测试系统，用于让用户完成入站测试并根据成绩获得邀请码以在论坛注册。
+这是十八桥社区的入站测试系统，用于让用户完成入站测试并根据成绩获得邀请码 / 注册 Token 以在论坛 / Matrix 注册。
 
 <p align="right">(<a href="#top">回到顶部</a>)</p>
 
@@ -81,7 +81,7 @@
 * 已经部署好的 Flarum
   * [FoF Doorman 插件](https://github.com/FriendsOfFlarum/doorman)
   * [OAuth Center 插件](https://github.com/FoskyM/flarum-oauth-center)
-* 已经部署好的 Matrix 实例（可选，用于注册“千万桥”的测试通道）
+* 已经部署好的 Matrix 实例（可选，用于注册 Matrix 的测试通道）
   * [Matrix Authentication Service](https://github.com/element-hq/matrix-authentication-service)
   * 启用 MAS 的 `adminapi` 资源，并准备一个具有 `urn:mas:admin` 作用域的个人访问令牌
 
@@ -193,9 +193,7 @@ CREATE TABLE `blacklist` (
 
 其中 `exam_papers` 为持久化试卷表（答题页与系统 API 共用，用于保证交卷按出卷题目计分、免考状态由服务端记录），`blacklist` 为测试黑名单表（按邮箱拉黑并自动记录访问 IP、累计检测次数）。
 
-同时，系统 API 已从 `?resource=&action=` 调用方式迁移为 RESTful 风格（`/api/v1/...`），详见下文「系统 API」。`api/index.php` 不再接受旧的 `resource` / `action` 参数。`.htaccess` 已包含 `/api/v1/` 的重写规则；若使用 Nginx，请将 `/api/v1/(.*)` 重写为 `api/index.php?path=/v1/$1`，或将请求直接指向 `api/index.php/v1/...`（PATH_INFO 方式）。
-
-### 配置“千万桥”测试通道（可选）
+### 配置 Matrix 测试通道（可选）
 
 如果你需要让用户通过本系统获得“千万桥”等 Matrix 实例的注册 Token，请按照以下步骤操作。
 
