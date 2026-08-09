@@ -414,7 +414,9 @@ function oauthMasCredentials(): ?array
 
 // Matrix（MAS）提供方配置，返回的配置直接交给 oauthRunFlow() 使用。
 // 客户端凭据通过 oauthMasCredentials() 解析（静态配置优先，否则动态注册）。
-function oauthMasConfig(string $redirectUri): array
+// $scope 用于授权请求：前台免考流程需要 email（核对登记邮箱），传默认的
+// 'openid email'；管理面板登录只需要用户名（MXID），传 'openid' 即可。
+function oauthMasConfig(string $redirectUri, string $scope = 'openid email'): array
 {
     $credentials = oauthMasCredentials();
     return [
@@ -426,7 +428,7 @@ function oauthMasConfig(string $redirectUri): array
         'token_path' => '/oauth2/token',
         'user_path' => '/oauth2/userinfo',
         'revoke_path' => '/oauth2/revoke',
-        'scope' => 'openid email',
+        'scope' => $scope,
         'use_pkce' => true,
         'fetch_user' => true,
         'revoke' => true,

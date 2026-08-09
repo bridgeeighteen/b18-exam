@@ -30,7 +30,8 @@ if (oauthMasCredentials() === null) {
     adminErrorPage('OAuth 登录失败', "无法获取 Matrix Authentication Service 的 OAuth 客户端凭据。\n请确认 MAS 的 OAuth 资源已启用、策略（policy.data.client_registration）允许本系统的回调地址 https://" . SITE . "/，然后重新尝试登录。");
 }
 
-$result = oauthRunFlow(oauthMasConfig('https://' . SITE . '/admin/oauth-matrix.php'));
+// 管理面板登录只需要用户名（MXID），仅请求 openid 作用域（不索取 email 授权）
+$result = oauthRunFlow(oauthMasConfig('https://' . SITE . '/admin/oauth-matrix.php', 'openid'));
 
 if (!$result['ok']) {
     $messages = [

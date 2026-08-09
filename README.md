@@ -248,7 +248,7 @@ CREATE TABLE `blacklist` (
          allow_missing_client_uri: false
    ```
 
-2. 在 `config.php` 中将 `MAS_OAUTH_ENABLED` 设置为 `true`（OAuth 端点与管理 API 共用 `MATRIX_API_SITE` 地址）。首次有用户点击「使用 Matrix 账号登录」时，系统将自动注册客户端，注册时提交的回调地址为 `https://你的部署网站/oauth-matrix.php` 与 `https://你的部署网站/admin/oauth-matrix.php`，授权类型为 `authorization_code`，作用域为 `openid email`，凭据（客户端 ID 与 MAS 生成的私钥）保存到 `mas_oauth_clients` 数据表。如果希望沿用静态注册方式，可把 `oauth.clients` 中配置的客户端 ID 与私钥填入 `MAS_OAUTH_CLIENT_ID` 与 `MAS_OAUTH_CLIENT_SECRET`（静态客户端需使用 `client_secret_post` 认证方式，且回调地址需覆盖上述两个路径），此时将跳过动态注册。
+2. 在 `config.php` 中将 `MAS_OAUTH_ENABLED` 设置为 `true`（OAuth 端点与管理 API 共用 `MATRIX_API_SITE` 地址）。首次有用户点击「使用 Matrix 账号登录」时，系统将自动注册客户端，注册时提交的回调地址为 `https://你的部署网站/oauth-matrix.php` 与 `https://你的部署网站/admin/oauth-matrix.php`，授权类型为 `authorization_code`，作用域为 `openid email`（前台免考流程需核对登记邮箱；管理面板登录只需用户名，仅请求 `openid` 作用域），凭据（客户端 ID 与 MAS 生成的私钥）保存到 `mas_oauth_clients` 数据表。如果希望沿用静态注册方式，可把 `oauth.clients` 中配置的客户端 ID 与私钥填入 `MAS_OAUTH_CLIENT_ID` 与 `MAS_OAUTH_CLIENT_SECRET`（静态客户端需使用 `client_secret_post` 认证方式，且回调地址需覆盖上述两个路径），此时将跳过动态注册。
 
 3. 重新导入 `table.sql` 以创建 `users` 与 `matrix_users` 表上的免考注解字段（`matrix_oauth_mxid`、`matrix_oauth_verified_at`、`forum_oauth_user_id`、`forum_oauth_verified_at`）及 `mas_oauth_clients` 数据表（动态注册的客户端凭据存放于此）。
 

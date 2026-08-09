@@ -134,8 +134,9 @@ function adminHasGroup(array $payload, $groupId): bool
 }
 
 // 校验用户是否为千万桥（MAS）管理员。
-// 通过 MAS 管理 API 按用户名（localpart）查询用户并检查 admin 属性。
-// 返回 ['username', 'mxid']，校验失败或 API 不可用时返回 null（fail-closed）。
+// 通过 MAS 管理 API 按用户名（localpart）查询用户并检查 admin 属性，
+// 再结合实例服务器名拼装 MXID（验证结果必须包含合法 MXID）。
+// 返回 ['username', 'mxid']；校验失败、API 不可用或无法确定 MXID 时返回 null（fail-closed）。
 function adminVerifyMatrixUser(string $username): ?array
 {
     require_once __DIR__ . '/../includes/matrix-api.php';
@@ -157,9 +158,18 @@ function adminVerifyMatrixUser(string $username): ?array
     }
 
     $serverName = masServerName();
+    if ($serverName === null) {
+        return null;
+    }
+
+    $mxid = '@' . $username . ':' . $serverName;
+    if (!isValidMxid($mxid)) {
+        return null;
+    }
+
     return [
         'username' => $username,
-        'mxid' => $serverName !== null ? '@' . $username . ':' . $serverName : null,
+        'mxid' => $mxid,
     ];
 }
 
