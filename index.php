@@ -23,7 +23,7 @@ sendSecurityHeaders();
                     <div class="row align-items-center g-5">
                         <div class="col-lg-7">
                             <h1 class="hero-title">你好！</h1>
-                            <p class="hero-lead">欢迎来到十八桥社区的入站测试系统。你只需要让测试总分数达到 <?php echo htmlspecialchars(SCORE_THRESHOLD); ?> 分及以上，就可以获得邀请码用于注册账号。<?php if (MATRIX_ENABLED) : ?>你还可以在信息登记页面选择注册<?php echo htmlspecialchars(MATRIX_INSTANCE_NAME); ?>，完成礼仪测试后即可获得注册 Token。<?php endif; ?></p>
+                            <p class="hero-lead">欢迎来到十八桥社区的入站测试系统。你只需要让测试总分数达到 <?php echo htmlspecialchars(SCORE_THRESHOLD); ?> 分及以上，就可以获得邀请码用于注册账号。<?php if (MATRIX_ENABLED) : ?>你还可以在信息登记页面选择注册<?php echo htmlspecialchars(MATRIX_INSTANCE_NAME); ?>，礼仪测试总分数达到 <?php echo htmlspecialchars(MATRIX_SCORE_THRESHOLD); ?> 分及以上后即可获得注册 Token。<?php endif; ?></p>
                             <p class="hero-note">请先阅读<a href="<?php echo htmlspecialchars(TOS_URL); ?>">使用条款</a>，确认完全理解其内容后再开始测试。</p>
                             <div class="hero-actions">
                                 <?php
@@ -33,7 +33,6 @@ sendSecurityHeaders();
                                     echo '<a class="btn btn-primary btn-lg" href="info.php" role="button">立即测试</a>';
                                 }
                                 ?>
-                                <a class="btn btn-outline-primary btn-lg" href="<?php echo htmlspecialchars(TOS_URL); ?>" role="button">阅读使用条款</a>
                             </div>
                         </div>
                         <div class="col-lg-5">

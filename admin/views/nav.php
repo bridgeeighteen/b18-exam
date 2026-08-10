@@ -21,7 +21,7 @@ $adminPage = basename($_SERVER['PHP_SELF'] ?? 'index.php');
                         <a class="nav-link" href="<?php echo htmlspecialchars(ABOUT_URL); ?>">关于</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="https://github.com/bridgeeighteen/b18-exam">源代码</a>
+                        <a class="nav-link" href="https://codeberg.org/bridgeeighteen/b18-exam">源代码</a>
                     </li>
                     <?php if ($adminCurrent !== null) : ?>
                         <li class="nav-item">
