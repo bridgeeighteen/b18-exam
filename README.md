@@ -250,7 +250,7 @@ CREATE TABLE `blacklist` (
 - **使用社区论坛登录**：需同时满足以下两个条件（缺一不可）：
   1. 论坛账号属于 `ADMIN_GROUP_ID`（默认 `1`，即论坛管理员组）对应的用户组；
   2. 在登录后的验证页面填写的千万桥（MAS）用户名具备 `admin` 属性（通过 MAS 管理 API 校验）。
-- **使用千万桥登录**：仅需满足千万桥账号具备 `admin` 属性（需将 `ADMIN_MAS_OAUTH_ENABLED` 设为 `true`；动态注册的 MAS 客户端已包含回调地址 `https://你的部署网站/admin/oauth-matrix.php`，若沿用静态注册则需手动为该客户端追加该回调地址）。
+- **使用 Matrix 登录**：仅需满足 Matrix 账号具备 `admin` 属性（需将 `ADMIN_MAS_OAUTH_ENABLED` 设为 `true`；动态注册的 MAS 客户端已包含回调地址 `https://你的部署网站/admin/oauth-matrix.php`，若沿用静态注册则需手动为该客户端追加该回调地址）。
 
 任何校验失败都会拒绝访问（fail-closed）。登录会话默认有效期为 120 分钟（`ADMIN_SESSION_LIFETIME`）。
 
@@ -379,6 +379,7 @@ CREATE TABLE `blacklist` (
 
 Matrix: [#community:millions.bridge18.qzz.io](https://matrix.to/#/#community:millions.bridge18.qzz.io)
 
+电子邮件：[info@bridge18.qzz.io](mailto:info@bridge18.qzz.io)
 <!-- IRC 频道：irc://irc.libera.chat/#bridgeeighteen -->
 
 <p align="right">(<a href="#top">回到顶部</a>)</p>
