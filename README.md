@@ -27,31 +27,6 @@
   </p>
 </div>
 
-<!-- 目录 -->
-<details>
-  <summary>目录</summary>
-  <ol>
-    <li>
-      <a href="#关于本项目">关于本项目</a>
-      <ul>
-        <li><a href="#构建工具">构建工具</a></li>
-      </ul>
-    </li>
-    <li>
-      <a href="#开始">开始</a>
-      <ul>
-        <li><a href="#依赖">依赖</a></li>
-        <li><a href="#正常安装（生产环境推荐）">正常安装</a></li>
-        <li><a href="#使用Git克隆安装">使用 Git 克隆安装</a></li>
-      </ul>
-    </li>
-    <li><a href="#主要功能">主要功能</a></li>
-    <li><a href="#贡献">贡献</a></li>
-    <li><a href="#许可证">许可证</a></li>
-    <li><a href="#联系我们">联系我们</a></li>
-  </ol>
-</details>
-
 <!-- 关于本项目 -->
 ## 关于本项目
 
@@ -158,6 +133,16 @@ CREATE TABLE `audit_log` (
   KEY `created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE `mas_oauth_clients` (
+  `id` int NOT NULL,
+  `client_id` varchar(128) NOT NULL,
+  `client_secret` varchar(128) NOT NULL,
+  `registered_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `last_used_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `client_id` (`client_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE `api_rate_limits` (
   `bucket` varchar(128) NOT NULL COMMENT '限流桶，如 ip:1.2.3.4 或 key:1',
   `window_start` int NOT NULL COMMENT '窗口起始时间（Unix 秒）',
@@ -216,8 +201,6 @@ CREATE TABLE `blacklist` (
 
 3. 在 `config.php` 中填写 `MATRIX_ENABLED`、`MATRIX_INSTANCE_NAME`、`MATRIX_API_SITE`、`MATRIX_API_TOKEN`、`MATRIX_REGISTER_URL`、`MATRIX_TOS_URL` 等配置项，并按需调整礼仪测试的题目数量、通过分数阈值与计分配置。
 
-4. 重新导入 `table.sql` 以创建 `matrix_users` 与 `matrix_results` 两张独立的数据表（礼仪测试的结果不会与论坛测试的结果混用）。
-
 注意：`MATRIX_API_TOKEN` 为敏感信息，请妥善保管，不要提交到源代码仓库。
 
 ### 配置 OAuth 免考（可选）
@@ -238,7 +221,7 @@ CREATE TABLE `blacklist` (
 
 #### 配置 Matrix 账号免考（MAS 提供方）
 
-1. 确保 MAS 的 OAuth 资源已启用（无需再在 `oauth.clients` 中静态注册客户端——本系统会通过 [OAuth 2.0 动态客户端注册协议（RFC 7591）](https://www.rfc-editor.org/rfc/rfc7591.txt)向 MAS 的 `POST /oauth2/registration` 端点自动注册）。动态注册受 MAS 的 OPA 策略（`policy.data.client_registration`）约束，默认要求 `client_uri` 为 HTTPS 且 `redirect_uris` 与其同主机，生产环境一般无需调整：
+1. 确保 MAS 的 OAuth 资源已启用。本系统可以通过 [OAuth 2.0 动态客户端注册协议（RFC 7591）](https://www.rfc-editor.org/info/rfc7591/)向 MAS 的 `POST /oauth2/registration` 端点自动注册。动态注册受 MAS 的 OPA 策略（`policy.data.client_registration`）约束，默认要求 `client_uri` 为 HTTPS 且 `redirect_uris` 与其同主机，生产环境一般无需调整：
 
    ```yaml
    policy:
@@ -251,8 +234,6 @@ CREATE TABLE `blacklist` (
    ```
 
 2. 在 `config.php` 中将 `MAS_OAUTH_ENABLED` 设置为 `true`（OAuth 端点与管理 API 共用 `MATRIX_API_SITE` 地址）。首次有用户点击「使用 Matrix 账号登录」时，系统将自动注册客户端，注册时提交的回调地址为 `https://你的部署网站/oauth-matrix.php` 与 `https://你的部署网站/admin/oauth-matrix.php`，授权类型为 `authorization_code`，作用域为 `openid`，凭据（客户端 ID 与 MAS 生成的私钥）保存到 `mas_oauth_clients` 数据表。需要说明的是，MAS 的 userinfo 端点只返回 `sub`（用户内部 ULID）与 `username`（localpart），并不返回邮箱；前台免考流程的邮箱核对由管理 API（`GET /api/admin/v1/user-emails?filter[user]=<sub>`）完成，管理面板登录只需用户名（localpart），两者都需要 `adminapi` 资源与 `MATRIX_API_TOKEN` 可用。如果希望沿用静态注册方式，可把 `oauth.clients` 中配置的客户端 ID 与私钥填入 `MAS_OAUTH_CLIENT_ID` 与 `MAS_OAUTH_CLIENT_SECRET`（静态客户端需使用 `client_secret_post` 认证方式，且回调地址需覆盖上述两个路径），此时将跳过动态注册。
-
-3. 重新导入 `table.sql` 以创建 `users` 与 `matrix_users` 表上的免考注解字段（`matrix_oauth_mxid`、`matrix_oauth_verified_at`、`forum_oauth_user_id`、`forum_oauth_verified_at`）及 `mas_oauth_clients` 数据表（动态注册的客户端凭据存放于此）。
 
 如需重置动态注册的客户端，删除 `mas_oauth_clients` 数据表中的记录即可，下一次点击「使用 Matrix 账号登录」时会重新注册。
 
@@ -292,7 +273,7 @@ CREATE TABLE `blacklist` (
 
 系统提供统一的 RESTful JSON API（`/api/v1/...`），覆盖管理端的数据统计、题目管理、测试记录、用户、API 密钥、黑名单与审计日志，以及完整的入站测试流程（候选人登记、试卷获取、交卷计分与邀请码 / 注册 Token 发放）。API 供外部工具（如论坛机器人、监控服务）与管理面板共用。
 
-> **Nginx 部署注意**：Nginx 不读取 `.htaccess`。请务必在站点配置的 `server` 块中添加 `/api/v1/` 的伪静态规则，否则管理面板的所有 API 功能（含 Markdown 导入/导出）会收到 Nginx 的 404 页面并报 `JSON.parse: unexpected character at line 1 column 1`：
+> **Nginx 部署注意**：Nginx 不读取 `.htaccess`。请务必在站点配置的 `server` 块中添加 `/api/v1/` 的伪静态规则，否则所有标准 API 接口连接会收到 Nginx 的 404 页面，导致无法使用：
 >
 > ```nginx
 > location ^~ /api/v1/ {
@@ -346,41 +327,6 @@ CREATE TABLE `blacklist` (
 | `GET /api/v1/blacklist` · `POST /api/v1/blacklist` | 黑名单列表（筛选 `q`）/ 新建（请求体 `email` 必填，`ips` 支持多个 IP） |
 | `PUT /api/v1/blacklist/{id}` · `DELETE /api/v1/blacklist/{id}` | 更新（IP 列表与原因）/ 删除黑名单条目 |
 
-常用示例：
-
-```shell
-BASE="https://你的部署网站/api/v1"
-AUTH="Authorization: Bearer <密钥>"
-
-# 健康检查（免认证）
-curl "$BASE/health"
-
-# 统计摘要
-curl -H "$AUTH" "$BASE/stats"
-
-# 题目列表（按分类筛选，分页）
-curl -H "$AUTH" "$BASE/questions?category=IT&page=1"
-
-# 登记论坛候选人并生成试卷（返回 201，含 candidate 与 paper）
-curl -X POST -H "$AUTH" -H "Content-Type: application/json" \
-  -d '{"channel":"forum","username":"张三","email":"zhangsan@example.com","categories":["IT","ACGN"]}' \
-  "$BASE/candidates"
-
-# 获取试卷（题目不含答案）
-curl -H "$AUTH" "$BASE/candidates/1/paper?channel=forum"
-
-# 交卷计分（answers 键为题目 ID，值为选项字母数组）
-curl -X POST -H "$AUTH" -H "Content-Type: application/json" \
-  -d '{"channel":"forum","answers":{"1":["A"],"2":["A","B"]}}' \
-  "$BASE/candidates/1/submissions"
-
-# 查询候选人状态与凭据
-curl -H "$AUTH" "$BASE/candidates/1?channel=forum"
-
-# Matrix 用户名可用性核验
-curl -H "$AUTH" "$BASE/matrix/usernames/zhangsan/availability"
-```
-
 考试流程中的候选人登记接口同样受作用域与限流保护；面向用户的网页流程（Turnstile 验证码与 OAuth 免考）保持不变。
 
 <p align="right">(<a href="#top">回到顶部</a>)</p>
@@ -396,7 +342,7 @@ curl -H "$AUTH" "$BASE/matrix/usernames/zhangsan/availability"
 - [x] 完美支持 Flarum 内置 API 接口和 FoF Doorman 插件自带 API 接口
 - [x] 支持 Matrix 实例注册测试通道（基于 Matrix Authentication Service 管理 API）
 - [x] 支持 Matrix 账号 OAuth 登录免考论坛测试中的基本礼仪题（MAS 作为 OAuth 提供方）
-- [x] 支持论坛账号 OAuth 登录免考 Matrix 礼仪测试（FoskyM OAuth Center 作为 OAuth 提供方）
+- [x] 支持论坛账号 OAuth 登录免考 Matrix 礼仪测试（OAuth Center 作为 OAuth 提供方）
 - [x] 管理面板：数据统计、测试信息、题目管理（手动录入 / 编辑 / 删除 / Markdown 表格导入导出）、黑名单管理
 - [x] 管理面板双平台管理员校验（论坛 OAuth 路径需同时为论坛管理员与千万桥管理员）
 - [x] 系统 REST API（`/api/v1/...`，覆盖管理端与完整考试流程、API 密钥、作用域、限流、审计日志）
