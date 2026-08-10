@@ -50,8 +50,8 @@
 ### 依赖
 
 * Composer
-* MySQL
-* PHP
+* MySQL / MariaDB
+* PHP 7.1+
 * Nginx / Apache
 * 已经部署好的 Flarum
   * [FoF Doorman 插件](https://github.com/FriendsOfFlarum/doorman)

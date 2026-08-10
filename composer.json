@@ -12,6 +12,14 @@
         }
     ],
     "require": {
+        "php": ">=7.1",
+        "ext-pdo": "*",
+        "ext-pdo_mysql": "*",
+        "ext-mysqli": "*",
+        "ext-curl": "*",
+        "ext-json": "*",
+        "ext-mbstring": "*",
+        "ext-filter": "*",
         "twbs/bootstrap": "^5.3",
         "fluxsoft/php-turnstile": "^0.1.3",
         "erusev/parsedown": "^1.8"
