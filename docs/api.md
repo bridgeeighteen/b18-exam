@@ -1,6 +1,6 @@
-# b18-exam 系统 API 指南
+# 入站测试系统 API 指南
 
-b18-exam 提供统一的 RESTful JSON API（`/api/v1/...`），覆盖数据统计、题目管理、测试记录、用户与候选人、API 密钥、黑名单与审计日志，以及完整的入站测试流程（候选人登记 → 试卷获取 → 交卷计分 → 邀请码 / 注册 Token 发放）。
+入站测试系统提供统一的 RESTful JSON API（`/api/v1/...`），覆盖数据统计、题目管理、测试记录、用户与候选人、API 密钥、黑名单与审计日志，以及完整的入站测试流程（候选人登记 → 试卷获取 → 交卷计分 → 邀请码 / 注册 Token 发放）。
 
 - 机器可读规范（OpenAPI 3.0）：[docs/api/openapi.yaml](openapi.yaml)，可用 Swagger UI / Redoc 等工具直接渲染。
 - API 供外部工具（如论坛机器人、监控服务）与管理面板共用。
@@ -28,7 +28,7 @@ location ^~ /api/v1/ {
 }
 ```
 
-若未添加上述规则，`/api/v1/...` 将返回 Nginx 的 404 页面，管理面板的所有 API 功能（如 Markdown 导入/导出）会报 `JSON.parse: unexpected character at line 1 column 1`。管理面板前端已使用 PATH_INFO 形式（`api/index.php/v1/...`）作为兜底，因此即使缺少该规则，面板功能依然可用。
+若未添加上述规则，`/api/v1/...` 将返回 Nginx 的 404 页面，所有标准 API 接口连接都不可用。管理面板前端已使用 PATH_INFO 形式（`api/index.php/v1/...`）作为兜底，因此即使缺少该规则，面板功能依然可用。
 
 ## 2. 认证与安全
 
@@ -310,7 +310,7 @@ curl -X POST -H "$AUTH" -H "Content-Type: application/json" \
 - 检测到被拉黑邮箱时，系统自动将访问者 IP 补充进该条目（若尚不存在），并累计该条目的 `detection_count`；IP 命中时同样累计其所属条目的检测次数；
 - 邮箱比较不区分大小写（存储为小写）。
 
-## 5. 完整考试流程演练
+## 5. 完整考试流程示例
 
 ```shell
 BASE="https://你的部署网站/api/v1"
