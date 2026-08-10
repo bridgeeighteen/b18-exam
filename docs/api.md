@@ -2,7 +2,7 @@
 
 入站测试系统提供统一的 RESTful JSON API（`/api/v1/...`），覆盖数据统计、题目管理、测试记录、用户与候选人、API 密钥、黑名单与审计日志，以及完整的入站测试流程（候选人登记 → 试卷获取 → 交卷计分 → 邀请码 / 注册 Token 发放）。
 
-- 机器可读规范（OpenAPI 3.0）：[docs/api/openapi.yaml](openapi.yaml)，可用 Swagger UI / Redoc 等工具直接渲染。
+- 机器可读规范（OpenAPI 3.0）：[docs/api/openapi.yaml](https://codeberg.org/bridgeeighteen/b18-exam/src/branch/main/docs/api/openapi.yaml)，可用 Swagger UI / Redoc 等工具直接渲染。
 - API 供外部工具（如论坛机器人、监控服务）与管理面板共用。
 
 ---
