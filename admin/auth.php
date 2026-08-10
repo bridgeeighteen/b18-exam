@@ -173,27 +173,6 @@ function adminVerifyMatrixUser(string $username): ?array
     ];
 }
 
-// 获取 MAS 实例的服务器名（用于拼装 MXID），失败时返回 null
-function masServerName(): ?string
-{
-    static $serverName = false;
-
-    if ($serverName !== false) {
-        return $serverName;
-    }
-
-    require_once __DIR__ . '/../includes/matrix-api.php';
-    $result = matrixApiRequest('GET', '/api/admin/v1/site-config');
-
-    if ($result === null || $result['status'] !== 200 || empty($result['data']['server_name'])) {
-        $serverName = null;
-        return null;
-    }
-
-    $serverName = (string)$result['data']['server_name'];
-    return $serverName;
-}
-
 // 输出管理员登录流程的错误页，与前台 oauthErrorPage() 共用渲染函数
 function adminErrorPage(string $title, string $message): void
 {

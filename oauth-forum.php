@@ -20,8 +20,16 @@ $result = oauthRunFlow(oauthFlarumConfig(
 ));
 
 if (!$result['ok']) {
+    $providerDetail = '未知错误';
+    if (!empty($result['provider_error'])) {
+        $providerDetail = htmlspecialchars($result['provider_error']);
+        if (!empty($result['provider_description'])) {
+            $providerDetail .= '：' . htmlspecialchars($result['provider_description']);
+        }
+    }
     $messages = [
         'state' => "无法验证 OAuth 请求的来源（state 不匹配），本次免考申请已被拒绝。\n请从信息登记页面重新发起登录，或者通过管理邮箱联系我们。",
+        'provider' => "论坛 OAuth 服务拒绝了本次授权请求（" . $providerDetail . "）。\n这通常是论坛 OAuth 插件中注册的客户端配置（回调地址 / 授权类型）与授权请求不匹配所致。请稍后重试，或者通过管理邮箱联系我们。",
         'token' => "与论坛交换授权码时出现问题，未能获取访问令牌。\n请稍后重试，或者通过管理邮箱联系我们。",
         'user' => "无法从论坛获取用户信息。\n请稍后重试，或者通过管理邮箱联系我们。",
     ];

@@ -21,8 +21,16 @@ if (oauthMasCredentials() === null) {
 $result = oauthRunFlow(oauthMasConfig('https://' . SITE . '/oauth-matrix.php'));
 
 if (!$result['ok']) {
+    $providerDetail = '未知错误';
+    if (!empty($result['provider_error'])) {
+        $providerDetail = htmlspecialchars($result['provider_error']);
+        if (!empty($result['provider_description'])) {
+            $providerDetail .= '：' . htmlspecialchars($result['provider_description']);
+        }
+    }
     $messages = [
         'state' => "无法验证 OAuth 请求的来源（state 不匹配），本次免考申请已被拒绝。\n请从信息登记页面重新发起登录，或者通过管理邮箱联系我们。",
+        'provider' => "Matrix Authentication Service 拒绝了本次授权请求（" . $providerDetail . "）。\n这通常是服务端注册的 OAuth 客户端元数据（response_type / grant_types）与授权请求不匹配所致。请稍后重试，或者通过管理邮箱联系我们。",
         'token' => "与 Matrix Authentication Service 交换授权码时出现问题，未能获取访问令牌。\n请稍后重试，或者通过管理邮箱联系我们。",
         'user' => "无法从 Matrix Authentication Service 获取用户信息。\n请稍后重试，或者通过管理邮箱联系我们。",
         'user_invalid' => "Matrix Authentication Service 返回的用户信息格式不正确，本次免考申请已被拒绝。\n请通过管理邮箱联系我们并向源代码仓库创建 Issues 以报告此问题。",
@@ -30,9 +38,23 @@ if (!$result['ok']) {
     oauthErrorPage($result['error'] === 'state' ? 'OAuth 验证失败' : 'OAuth 登录失败', $messages[$result['error']]);
 }
 
+$subject = $result['user']['subject'];
+
+// MAS 的 userinfo 端点不返回 email，账号绑定邮箱需通过管理 API 核验
+// （GET /api/admin/v1/user-emails?filter[user]=<sub>，sub 即用户 ULID）。
+// 核验失败时 fail-closed：不发放免考资格。
+if ($subject === '') {
+    oauthErrorPage('OAuth 登录失败', "Matrix Authentication Service 返回的用户信息缺少用户标识，本次免考申请已被拒绝。\n请通过管理邮箱联系我们并向源代码仓库创建 Issues 以报告此问题。");
+}
+
+$emails = masUserEmails($subject);
+if ($emails === null) {
+    oauthErrorPage('OAuth 登录失败', "无法核验 Matrix 账号绑定的电子邮件地址（管理 API 不可用）。\n请稍后重试，或者通过管理邮箱联系我们。");
+}
+
 $_SESSION['matrix_oauth'] = [
     'mxid' => $result['user']['mxid'],
-    'email' => $result['user']['email'],
+    'emails' => $emails,
     'verified_at' => time(),
 ];
 

@@ -227,12 +227,14 @@ CREATE TABLE `blacklist` (
 - **Matrix 账号免考论坛测试**：用户在 Matrix Authentication Service（MAS）上登录自己的 Matrix 账号后，注册论坛时的入站测试将不包含基本礼仪题，该部分直接获得满分（`users` 表中的 `matrix_oauth_mxid` 注解会记录其 Matrix 用户 ID）。
 - **论坛账号免考 Matrix 测试**：用户登录自己的论坛账号后，注册 Matrix 实例时免考礼仪测试并直接获得满分，系统随即发放注册 Token（`matrix_users` 表中的 `forum_oauth_user_id` 注解会记录其论坛用户 ID）。
 
-两条通道均使用 OAuth 2.0 授权码流程（含 `state` 防 CSRF 校验；MAS 通道额外使用 PKCE），且登记信息中的电子邮件地址必须与 OAuth 验证到的账号所绑定邮箱完全一致，否则免考不生效，按正常测试流程进行。
+两条通道均使用 OAuth 2.0 授权码流程（含 `state` 防 CSRF 校验；MAS 通道额外使用 PKCE），且登记信息中的电子邮件地址必须与 OAuth 验证到的账号所绑定邮箱完全一致，否则免考不生效，按正常测试流程进行。论坛通道的绑定邮箱由 OAuth 用户信息接口返回；MAS 通道的 userinfo 端点不返回邮箱，绑定邮箱通过 MAS 管理 API（`GET /api/admin/v1/user-emails`）核验，因此启用该通道需同时启用 MAS 的 `adminapi` 资源并配置 `MATRIX_API_TOKEN`。
 
 #### 配置论坛账号免考（Flarum 提供方）
 
 1. 在 Flarum 的 OAuth Center 插件管理面板中创建一个新的应用（不要与管理员登录应用混用），回调地址填 `https://你的部署网站/oauth-forum.php`，作用域选择默认的 `user.read`。
 2. 将自动生成的 ID 和私钥分别填入 `config.php` 中的 `FORUM_OAUTH_CLIENT_ID` 与 `FORUM_OAUTH_CLIENT_SECRET`，并将 `FORUM_OAUTH_ENABLED` 设置为 `true`。
+
+> 说明：OAuth Center 插件会用自己的控制器覆盖 Flarum 的 `GET /api/user` 端点，返回平铺的 JSON（`{"id":7,"username":"...","email":"...",...}`，无 `data`/`attributes` 包裹）。本系统已同时兼容该平铺形态与标准 JSON:API 信封形态，无需额外配置。
 
 #### 配置 Matrix 账号免考（MAS 提供方）
 
@@ -248,7 +250,7 @@ CREATE TABLE `blacklist` (
          allow_missing_client_uri: false
    ```
 
-2. 在 `config.php` 中将 `MAS_OAUTH_ENABLED` 设置为 `true`（OAuth 端点与管理 API 共用 `MATRIX_API_SITE` 地址）。首次有用户点击「使用 Matrix 账号登录」时，系统将自动注册客户端，注册时提交的回调地址为 `https://你的部署网站/oauth-matrix.php` 与 `https://你的部署网站/admin/oauth-matrix.php`，授权类型为 `authorization_code`，作用域为 `openid email`（前台免考流程需核对登记邮箱；管理面板登录只需用户名，仅请求 `openid` 作用域），凭据（客户端 ID 与 MAS 生成的私钥）保存到 `mas_oauth_clients` 数据表。如果希望沿用静态注册方式，可把 `oauth.clients` 中配置的客户端 ID 与私钥填入 `MAS_OAUTH_CLIENT_ID` 与 `MAS_OAUTH_CLIENT_SECRET`（静态客户端需使用 `client_secret_post` 认证方式，且回调地址需覆盖上述两个路径），此时将跳过动态注册。
+2. 在 `config.php` 中将 `MAS_OAUTH_ENABLED` 设置为 `true`（OAuth 端点与管理 API 共用 `MATRIX_API_SITE` 地址）。首次有用户点击「使用 Matrix 账号登录」时，系统将自动注册客户端，注册时提交的回调地址为 `https://你的部署网站/oauth-matrix.php` 与 `https://你的部署网站/admin/oauth-matrix.php`，授权类型为 `authorization_code`，作用域为 `openid`，凭据（客户端 ID 与 MAS 生成的私钥）保存到 `mas_oauth_clients` 数据表。需要说明的是，MAS 的 userinfo 端点只返回 `sub`（用户内部 ULID）与 `username`（localpart），并不返回邮箱；前台免考流程的邮箱核对由管理 API（`GET /api/admin/v1/user-emails?filter[user]=<sub>`）完成，管理面板登录只需用户名（localpart），两者都需要 `adminapi` 资源与 `MATRIX_API_TOKEN` 可用。如果希望沿用静态注册方式，可把 `oauth.clients` 中配置的客户端 ID 与私钥填入 `MAS_OAUTH_CLIENT_ID` 与 `MAS_OAUTH_CLIENT_SECRET`（静态客户端需使用 `client_secret_post` 认证方式，且回调地址需覆盖上述两个路径），此时将跳过动态注册。
 
 3. 重新导入 `table.sql` 以创建 `users` 与 `matrix_users` 表上的免考注解字段（`matrix_oauth_mxid`、`matrix_oauth_verified_at`、`forum_oauth_user_id`、`forum_oauth_verified_at`）及 `mas_oauth_clients` 数据表（动态注册的客户端凭据存放于此）。
 

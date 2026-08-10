@@ -62,7 +62,7 @@ $matrixAvailable = MATRIX_ENABLED && !MATRIX_CLOSED;
                                 <?php $matrixOauth = matrixOAuthVerified(); ?>
                                 <?php if ($matrixOauth !== null) : ?>
                                 <div class="form-section">
-                                    <div class="alert alert-success" role="alert">已通过 Matrix 账号（<?php echo htmlspecialchars($matrixOauth['mxid']); ?>）验证。请使用与该 Matrix 账号绑定的电子邮件地址填写下方表单，提交后基本礼仪题部分将免考并直接获得满分。</div>
+                                    <div class="alert alert-success" role="alert">已通过 Matrix 账号（<?php echo htmlspecialchars($matrixOauth['mxid']); ?>）验证。请填写与该 Matrix 账号绑定的电子邮件地址，提交后基本礼仪题部分将免考并直接获得满分。</div>
                                 </div>
                                 <?php else : ?>
                                 <div class="form-section">

@@ -4,6 +4,7 @@ require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/version.php';
 require_once __DIR__ . '/security.php';
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/matrix-api.php';
 
 // 通用 OAuth 2.0 客户端，供以下四套授权流程共用：
 // - oauth-matrix.php：Matrix Authentication Service（MAS）作为 OAuth 提供方，用户登录其
@@ -228,14 +229,6 @@ function isValidMxid(string $mxid): bool
     return preg_match('/^@[A-Za-z0-9._=\/-]+:[A-Za-z0-9.-]+$/', $mxid) === 1;
 }
 
-// 从 MXID 中提取本地部分（小写），如 @User:example.com → user
-function masMxidToUsername(string $mxid): string
-{
-    $colon = strpos($mxid, ':');
-    $localpart = $colon === false ? substr($mxid, 1) : substr($mxid, 1, $colon - 1);
-    return strtolower($localpart);
-}
-
 // 邮箱是否匹配（忽略大小写与首尾空白比较）
 function oauthEmailsMatch(string $a, string $b): bool
 {
@@ -243,7 +236,10 @@ function oauthEmailsMatch(string $a, string $b): bool
 }
 
 // 解析 Flarum 用户信息为统一结构：['id', 'username', 'email']。
-// 兼容两种响应形态：标准 JSON:API 信封（data 内为资源）与平铺的资源对象，
+// 兼容两种响应形态：
+// - 标准 JSON:API 信封（data 内为资源，字段位于 attributes 中）；
+// - FoskyM/flarum-oauth-center 的平铺响应（其 ApiUserController 覆盖了 Flarum 的
+//   /api/user 端点，返回 {"id": 7, "username": "...", "email": "...", ...}，无 attributes 包裹）。
 // 缺少 id 时返回 null（fail-closed）。
 function oauthFlarumUserFromData(array $data): ?array
 {
@@ -254,6 +250,15 @@ function oauthFlarumUserFromData(array $data): ?array
     $attributes = $resource['attributes'] ?? [];
     $username = isset($attributes['username']) ? (string)$attributes['username'] : '';
     $email = isset($attributes['email']) && is_string($attributes['email']) ? $attributes['email'] : '';
+
+    // OAuth Center 平铺响应：username / email 位于资源顶层，而非 attributes 内
+    if ($username === '' && isset($resource['username']) && is_scalar($resource['username'])) {
+        $username = (string)$resource['username'];
+    }
+    if ($email === '' && isset($resource['email']) && is_string($resource['email'])) {
+        $email = $resource['email'];
+    }
+
     return [
         'id' => $resource['id'],
         'username' => $username,
@@ -290,7 +295,10 @@ function oauthMasClientMetadata(): array
         ],
         'grant_types' => ['authorization_code'],
         'response_types' => ['code'],
-        'scope' => 'openid email',
+        // 仅请求 openid：MAS 的 userinfo 端点只返回 sub（用户 ULID）与 username
+        // （localpart），并不返回 email 等其它声明；免考流程的邮箱核对改由
+        // 管理 API（GET /api/admin/v1/user-emails）完成，见 oauth-matrix.php。
+        'scope' => 'openid',
         // 与 oauthExchangeAuthorizationCode() 一致：凭据以表单字段形式提交
         'token_endpoint_auth_method' => 'client_secret_post',
     ];
@@ -414,9 +422,13 @@ function oauthMasCredentials(): ?array
 
 // Matrix（MAS）提供方配置，返回的配置直接交给 oauthRunFlow() 使用。
 // 客户端凭据通过 oauthMasCredentials() 解析（静态配置优先，否则动态注册）。
-// $scope 用于授权请求：前台免考流程需要 email（核对登记邮箱），传默认的
-// 'openid email'；管理面板登录只需要用户名（MXID），传 'openid' 即可。
-function oauthMasConfig(string $redirectUri, string $scope = 'openid email'): array
+// $scope 仅用于授权请求，两条 MAS 流程都只需 'openid'（MAS 的 userinfo 端点
+// 只返回 sub 与 username 两个声明，详见下方 user_parser）。
+// 解析结果中的用户结构为 ['username'（localpart）, 'mxid', 'subject'（MAS 用户 ULID）, 'email']。
+// 注意：MAS userinfo 的 sub 是用户内部 ULID（如 01J5Y2GZ...），不是 MXID；
+// MXID 由 localpart 与实例服务器名拼装（masServerName()），邮箱不存在于
+// userinfo 中，由 oauth-matrix.php 通过管理 API 另行核验。
+function oauthMasConfig(string $redirectUri, string $scope = 'openid'): array
 {
     $credentials = oauthMasCredentials();
     return [
@@ -434,19 +446,34 @@ function oauthMasConfig(string $redirectUri, string $scope = 'openid email'): ar
         'revoke' => true,
         'user_query_param' => null,
         'user_parser' => static function (array $data): array {
-            if (!isset($data['sub']) || !is_string($data['sub'])) {
-                return ['error' => 'user'];
-            }
-            $mxid = $data['sub'];
-            if (!isValidMxid($mxid)) {
+            // MAS userinfo 响应形如 {"sub": "<用户 ULID>", "username": "<localpart>"}
+            $username = isset($data['username']) && is_string($data['username'])
+                ? strtolower(trim($data['username'])) : '';
+            if ($username === '' || !isValidMatrixUsername($username)) {
+                error_log("MAS userinfo 解析失败：username 缺失或格式不正确 - " . json_encode($data));
                 return ['error' => 'user_invalid'];
             }
+
+            $serverName = masServerName();
+            if ($serverName === null) {
+                error_log("MAS userinfo 解析失败：无法获取实例服务器名以拼装 MXID");
+                return ['error' => 'user'];
+            }
+
+            $mxid = '@' . $username . ':' . $serverName;
+            if (!isValidMxid($mxid)) {
+                error_log("MAS userinfo 解析失败：拼装出的 MXID 格式不正确 - " . $mxid);
+                return ['error' => 'user_invalid'];
+            }
+
+            $subject = isset($data['sub']) && is_string($data['sub']) ? $data['sub'] : '';
             $email = isset($data['email']) && is_string($data['email']) ? $data['email'] : '';
             return [
                 'user' => [
+                    'username' => $username,
                     'mxid' => $mxid,
+                    'subject' => $subject,
                     'email' => $email,
-                    'username' => masMxidToUsername($mxid),
                 ],
             ];
         },
@@ -473,11 +500,12 @@ function oauthFlarumConfig(string $redirectUri, string $clientId, string $client
         'revoke' => false,
         'user_query_param' => 'access_token',
         'user_parser' => static function (array $data): array {
-            $resource = is_array($data['data'] ?? null) ? $data['data'] : $data;
-            if (!isset($resource['id']) || !isset($resource['attributes'])) {
+            // 兼容 JSON:API 信封与 OAuth Center 平铺两种响应形态，
+            // 均交由 oauthFlarumUserFromData() 统一解析
+            $user = oauthFlarumUserFromData($data);
+            if ($user === null) {
                 return ['error' => 'user'];
             }
-            $user = oauthFlarumUserFromData($data);
             return ['user' => $user];
         },
     ];
@@ -494,6 +522,23 @@ function oauthFlarumConfig(string $redirectUri, string $clientId, string $client
 function oauthRunFlow(array $cfg): array
 {
     if (!isset($_GET['code'])) {
+        // 提供方拒绝了授权请求（如 unsupported_response_type / unauthorized_client /
+        // invalid_scope 等），回调中只带有 error / error_description / state 而没有 code。
+        // 此时不得重启流程（否则会与提供方之间无限重定向），直接返回失败结果，
+        // 由入口页面展示提供方给出的错误信息，便于定位注册的客户端元数据问题。
+        if (isset($_GET['error'])) {
+            $providerError = is_string($_GET['error']) ? $_GET['error'] : '';
+            $providerDescription = isset($_GET['error_description']) && is_string($_GET['error_description'])
+                ? $_GET['error_description'] : '';
+            error_log("OAuth 提供方拒绝了授权请求：" . $providerError . ($providerDescription !== '' ? ' - ' . $providerDescription : ''));
+            return [
+                'ok' => false,
+                'error' => 'provider',
+                'provider_error' => $providerError,
+                'provider_description' => $providerDescription,
+            ];
+        }
+
         $params = [
             'client_id' => $cfg['client_id'],
             'response_type' => 'code',
@@ -555,11 +600,13 @@ function oauthRunFlow(array $cfg): array
     return ['ok' => true, 'access_token' => $accessToken, 'user' => $parsed['user']];
 }
 
-// 读取本次会话中已完成的 Matrix（MAS）OAuth 验证，结构不完整时返回 null
+// 读取本次会话中已完成的 Matrix（MAS）OAuth 验证，结构不完整时返回 null。
+// emails 为 MAS 账号绑定的邮箱列表（小写，由管理 API 核验），可为空数组。
 function matrixOAuthVerified(): ?array
 {
     $data = $_SESSION['matrix_oauth'] ?? null;
-    if (!is_array($data) || !isset($data['mxid'], $data['email'], $data['verified_at'])) {
+    if (!is_array($data) || !isset($data['mxid'], $data['emails'], $data['verified_at'])
+        || !is_array($data['emails'])) {
         return null;
     }
     return $data;

@@ -34,8 +34,16 @@ if (oauthMasCredentials() === null) {
 $result = oauthRunFlow(oauthMasConfig('https://' . SITE . '/admin/oauth-matrix.php', 'openid'));
 
 if (!$result['ok']) {
+    $providerDetail = '未知错误';
+    if (!empty($result['provider_error'])) {
+        $providerDetail = htmlspecialchars($result['provider_error']);
+        if (!empty($result['provider_description'])) {
+            $providerDetail .= '：' . htmlspecialchars($result['provider_description']);
+        }
+    }
     $messages = [
         'state' => "无法验证 OAuth 请求的来源（state 不匹配），本次登录已被拒绝。\n请从管理面板登录页重新发起登录。",
+        'provider' => "Matrix Authentication Service 拒绝了本次授权请求（" . $providerDetail . "）。\n这通常是服务端注册的 OAuth 客户端元数据（response_type / grant_types）与授权请求不匹配所致。请稍后重试。",
         'token' => "与 Matrix Authentication Service 交换授权码时出现问题，未能获取访问令牌。\n请稍后重试。",
         'user' => "无法从 Matrix Authentication Service 获取用户信息。\n请稍后重试。",
         'user_invalid' => "Matrix Authentication Service 返回的用户信息格式不正确，本次登录已被拒绝。",

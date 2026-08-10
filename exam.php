@@ -28,10 +28,10 @@ if (FORUM_CLOSED) {
             $examError = $turnstile['warning'];
         }
 
-        // 已通过 Matrix 账号 OAuth 验证且邮箱一致的用户，免考基本礼仪题
+        // 已通过 Matrix 账号 OAuth 验证且登记邮箱为账号绑定邮箱的用户，免考基本礼仪题
         $matrixOauth = matrixOAuthVerified();
         $email = trim((string)($_POST['email'] ?? ''));
-        if ($matrixOauth !== null && oauthEmailsMatch($matrixOauth['email'], $email)) {
+        if ($matrixOauth !== null && in_array(strtolower($email), $matrixOauth['emails'], true)) {
             $matrixMxid = $matrixOauth['mxid'];
         }
 

@@ -136,3 +136,48 @@ function isValidMatrixUsername(string $username): bool
 {
     return preg_match('/^[a-z0-9._=-]{1,254}$/', $username) === 1;
 }
+
+// 获取 MAS 实例的服务器名（用于拼装 MXID），失败时返回 null
+function masServerName(): ?string
+{
+    static $serverName = false;
+
+    if ($serverName !== false) {
+        return $serverName;
+    }
+
+    $result = matrixApiRequest('GET', '/api/admin/v1/site-config');
+
+    if ($result === null || $result['status'] !== 200 || empty($result['data']['server_name'])) {
+        $serverName = null;
+        return null;
+    }
+
+    $serverName = (string)$result['data']['server_name'];
+    return $serverName;
+}
+
+// 查询 MAS 用户（按 ULID，即 OAuth userinfo 中的 sub）绑定的电子邮件地址
+// （GET /api/admin/v1/user-emails?filter[user]=<ulid>）。返回小写邮箱列表：
+// 账号没有任何绑定邮箱时返回空数组，API 不可用或响应异常时返回 null（fail-closed）。
+function masUserEmails(string $userUlid): ?array
+{
+    $result = matrixApiRequest('GET', '/api/admin/v1/user-emails?filter[user]=' . rawurlencode($userUlid));
+
+    if ($result === null || $result['status'] !== 200) {
+        if ($result !== null) {
+            error_log("Matrix API 查询用户邮箱返回了异常的 HTTP 状态码：" . $result['status']);
+        }
+        return null;
+    }
+
+    $emails = [];
+    foreach ($result['data']['data'] ?? [] as $resource) {
+        $email = $resource['attributes']['email'] ?? null;
+        if (is_string($email) && $email !== '') {
+            $emails[] = strtolower(trim($email));
+        }
+    }
+
+    return array_values(array_unique($emails));
+}

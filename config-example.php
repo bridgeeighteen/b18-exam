@@ -80,8 +80,10 @@ define('FORUM_OAUTH_CLIENT_SECRET', 'YOUR_FORUM_OAUTH_CLIENT_SECRET'); // 上述
 // 仅需 MAS_OAUTH_ENABLED 与 MATRIX_API_SITE（OAuth 端点与管理 API 共用该地址）即可：首次使用时会通过
 // OAuth 2.0 动态客户端注册协议（RFC 7591，POST <MAS>/oauth2/registration）自动注册客户端，注册返回的
 // 凭据保存到 mas_oauth_clients 数据表。回调地址自动注册为 https://你的部署网站/oauth-matrix.php 与
-// https://你的部署网站/admin/oauth-matrix.php，授权类型为 authorization_code，作用域为 openid 与 email
-// （前台免考流程需核对登记邮箱；管理面板登录只需用户名，仅请求 openid 作用域）。
+// https://你的部署网站/admin/oauth-matrix.php，授权类型为 authorization_code，作用域为 openid。
+// 注意：MAS 的 userinfo 端点只返回 sub（用户内部 ULID）与 username（localpart），不返回 email；
+// 前台免考流程通过管理 API（GET /api/admin/v1/user-emails，需 MATRIX_API_TOKEN 可用）核对登记邮箱
+// 是否为该账号的绑定邮箱，管理面板登录只需用户名（无需邮箱）。请确认 MAS 的 adminapi 资源已启用。
 // 如需沿用 MAS 配置文件中 oauth.clients 的静态注册方式，可把静态客户端 ID 与私钥填入下面两项，
 // 此时将跳过动态注册（两项均需同时填写）。
 define('MAS_OAUTH_ENABLED', false); // 是否启用“使用 Matrix 账号登录（免考礼仪测试）”
