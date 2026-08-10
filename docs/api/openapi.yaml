@@ -1,9 +1,9 @@
 openapi: 3.0.3
 info:
-  title: b18-exam 系统 API
+  title: 十八桥社区入站测试系统 API
   version: 1.1.0
   description: |
-    b18-exam 的统一 RESTful JSON API。覆盖数据统计、题目管理、测试记录、用户、
+    十八桥社区入站测试系统的统一 RESTful JSON API。覆盖数据统计、题目管理、测试记录、用户、
     API 密钥、黑名单与审计日志，以及完整的入站测试流程（候选人登记、试卷获取、交卷计分、
     邀请码 / 注册 Token 发放）与公共元数据 / 健康检查。
 
