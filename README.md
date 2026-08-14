@@ -38,7 +38,6 @@
 
 * [Composer](https://getcomposer.org)
 * [Bootstrap](https://getbootstrap.com/)
-* [jQuery](https://jquery.com)
 
 <p align="right">(<a href="#top">回到顶部</a>)</p>
 

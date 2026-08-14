@@ -53,18 +53,33 @@
 
     // ---------- tests.php ----------
 
+    var statusLabels = {
+        submitted: '已完成',
+        in_progress: '进行中',
+        abandoned: '中途退出',
+        not_started: '未开始'
+    };
+
     var detailButtons = document.querySelectorAll('[data-detail]');
     detailButtons.forEach(function (button) {
         button.addEventListener('click', function () {
             var channel = button.getAttribute('data-channel');
+            var hasResult = button.getAttribute('data-has-result') === '1';
             var id = button.getAttribute('data-detail');
+            var userId = button.getAttribute('data-user-id');
+            var status = button.getAttribute('data-status') || '';
             var body = document.getElementById('detailModalBody');
             body.innerHTML = '<div class="text-muted">加载中…</div>';
 
-            apiRequest('GET', '/results/' + encodeURIComponent(id), { channel: channel }).then(function (data) {
+            var request = hasResult
+                ? apiRequest('GET', '/results/' + encodeURIComponent(id), { channel: channel })
+                : apiRequest('GET', '/users/' + encodeURIComponent(userId), { channel: channel });
+
+            request.then(function (data) {
                 var user = data.user;
+                var history = data.history || [];
                 var html = '<dl class="row mb-3">';
-                html += '<dt class="col-sm-3">用户 ID</dt><dd class="col-sm-9">' + escapeHtml(user.user_id) + '</dd>';
+                html += '<dt class="col-sm-3">用户 ID</dt><dd class="col-sm-9">' + escapeHtml(user.id !== undefined ? user.id : user.user_id) + '</dd>';
                 html += '<dt class="col-sm-3">用户名</dt><dd class="col-sm-9">' + escapeHtml(user.username) + '</dd>';
                 html += '<dt class="col-sm-3">邮箱</dt><dd class="col-sm-9">' + escapeHtml(user.email) + '</dd>';
                 if (user.selected_categories) {
@@ -76,15 +91,16 @@
                 if (user.forum_oauth_user_id) {
                     html += '<dt class="col-sm-3">论坛免考</dt><dd class="col-sm-9">用户 #' + escapeHtml(user.forum_oauth_user_id) + (user.forum_oauth_verified_at ? '（' + escapeHtml(user.forum_oauth_verified_at) + '）' : '') + '</dd>';
                 }
+                html += '<dt class="col-sm-3">状态</dt><dd class="col-sm-9">' + escapeHtml(statusLabels[status] || '—') + '</dd>';
                 html += '<dt class="col-sm-3">开始时间</dt><dd class="col-sm-9">' + escapeHtml(user.start_time || '—') + '</dd>';
                 html += '</dl>';
 
                 html += '<h6 class="section-head">历史测试记录</h6>';
                 html += '<table class="table table-sm"><thead><tr><th>ID</th><th>分数</th><th>交卷时间</th><th>凭据</th></tr></thead><tbody>';
-                (data.history || []).forEach(function (row) {
+                history.forEach(function (row) {
                     html += '<tr><td>' + escapeHtml(row.id) + '</td><td>' + escapeHtml(row.score) + '</td><td>' + escapeHtml(row.end_time) + '</td><td><code>' + escapeHtml(row.code) + '</code></td></tr>';
                 });
-                if (!data.history || data.history.length === 0) {
+                if (history.length === 0) {
                     html += '<tr><td colspan="4" class="text-muted">暂无记录</td></tr>';
                 }
                 html += '</tbody></table>';

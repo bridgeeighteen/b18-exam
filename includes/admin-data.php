@@ -544,6 +544,124 @@ function listCandidates(string $channel, array $filters, int $page, int $perPage
     return ['channel' => $channel, 'items' => $items, 'total' => $total, 'page' => $page, 'per_page' => $perPage, 'pages' => (int)ceil($total / $perPage)];
 }
 
+// 测试信息总览（admin/tests.php）：以用户为维度列出全部登记用户，LEFT JOIN 最新测试结果。
+// 已交卷用户附带分数、结果与凭据（邀请码 / 注册 Token）；
+// 未交卷用户按状态区分：in_progress（进行中）/ abandoned（中途退出）/ not_started（未开始）。
+// 状态边界依据 start_time 与测试时长计算，使用数据库 UNIX_TIMESTAMP 保证时区一致。
+function listTestUsers(string $channel, array $filters, int $page, int $perPage): array
+{
+    $db = getPDO();
+    $channel = $channel === 'matrix' ? 'matrix' : 'forum';
+
+    if ($channel === 'matrix') {
+        $userTable = 'matrix_users';
+        $resultTable = 'matrix_results';
+        $codeField = 'registration_token';
+        $threshold = (int)MATRIX_SCORE_THRESHOLD;
+        $durationSec = (int)MATRIX_EXAM_REMAIN_TIME * 60;
+        $channelFields = 'u.forum_oauth_user_id';
+    } else {
+        $userTable = 'users';
+        $resultTable = 'results';
+        $codeField = 'invitation_code';
+        $threshold = (int)SCORE_THRESHOLD;
+        $durationSec = (int)EXAM_REMAIN_TIME * 60;
+        $channelFields = 'u.selected_categories, u.matrix_oauth_mxid';
+    }
+
+    $statusSql = "CASE WHEN r.id IS NOT NULL THEN 'submitted'"
+        . " WHEN u.start_time IS NULL THEN 'not_started'"
+        . " WHEN UNIX_TIMESTAMP(u.start_time) + $durationSec <= UNIX_TIMESTAMP(NOW()) THEN 'abandoned'"
+        . " ELSE 'in_progress' END";
+
+    $where = [];
+    $params = [];
+
+    if (!empty($filters['q'])) {
+        $where[] = '(u.username LIKE ? OR u.email LIKE ?)';
+        $params[] = '%' . $filters['q'] . '%';
+        $params[] = '%' . $filters['q'] . '%';
+    }
+    if (!empty($filters['status']) && in_array($filters['status'], ['submitted', 'pass', 'fail', 'in_progress', 'abandoned', 'not_started'], true)) {
+        if ($filters['status'] === 'pass') {
+            $where[] = 'r.id IS NOT NULL AND r.score >= ?';
+            $params[] = $threshold;
+        } elseif ($filters['status'] === 'fail') {
+            $where[] = 'r.id IS NOT NULL AND r.score < ?';
+            $params[] = $threshold;
+        } elseif ($filters['status'] === 'submitted') {
+            $where[] = 'r.id IS NOT NULL';
+        } elseif ($filters['status'] === 'in_progress') {
+            $where[] = "r.id IS NULL AND u.start_time IS NOT NULL AND UNIX_TIMESTAMP(u.start_time) + $durationSec > UNIX_TIMESTAMP(NOW())";
+        } elseif ($filters['status'] === 'abandoned') {
+            $where[] = "r.id IS NULL AND u.start_time IS NOT NULL AND UNIX_TIMESTAMP(u.start_time) + $durationSec <= UNIX_TIMESTAMP(NOW())";
+        } else {
+            $where[] = 'r.id IS NULL AND u.start_time IS NULL';
+        }
+    }
+    if (!empty($filters['date_from']) && isValidDateFilter($filters['date_from'])) {
+        $where[] = 'COALESCE(r.end_time, u.start_time) >= ?';
+        $params[] = $filters['date_from'] . ' 00:00:00';
+    }
+    if (!empty($filters['date_to']) && isValidDateFilter($filters['date_to'])) {
+        $where[] = 'COALESCE(r.end_time, u.start_time) <= ?';
+        $params[] = $filters['date_to'] . ' 23:59:59';
+    }
+    $whereSql = $where !== [] ? ' WHERE ' . implode(' AND ', $where) : '';
+
+    $latestResult = "SELECT id FROM $resultTable WHERE user_id = u.id ORDER BY end_time DESC, id DESC LIMIT 1";
+    $latestPaper = "SELECT id FROM exam_papers WHERE channel = '$channel' AND candidate_id = u.id ORDER BY id DESC LIMIT 1";
+
+    $fromSql = "$userTable u"
+        . " LEFT JOIN $resultTable r ON r.id = ($latestResult)"
+        . " LEFT JOIN exam_papers p ON p.id = ($latestPaper)";
+
+    $stmt = $db->prepare("SELECT COUNT(*) FROM $fromSql" . $whereSql);
+    $stmt->execute($params);
+    $total = (int)$stmt->fetchColumn();
+
+    $stmt = $db->prepare(
+        "SELECT u.id, u.username, u.email, u.start_time, $channelFields, "
+        . "$statusSql AS exam_status, "
+        . "r.id AS result_id, r.score AS latest_score, r.end_time, r.$codeField AS code, "
+        . "(SELECT COUNT(*) FROM $resultTable WHERE user_id = u.id) AS attempts, "
+        . "p.id AS paper_id "
+        . "FROM $fromSql" . $whereSql . ' ORDER BY u.id DESC LIMIT ? OFFSET ?'
+    );
+    $stmt->execute(array_merge($params, [$perPage, ($page - 1) * $perPage]));
+
+    $items = [];
+    foreach ($stmt->fetchAll() as $row) {
+        $hasResult = $row['latest_score'] !== null;
+
+        $item = [
+            'user_id' => (int)$row['id'],
+            'username' => (string)$row['username'],
+            'email' => (string)$row['email'],
+            'start_time' => $row['start_time'],
+            'status' => (string)$row['exam_status'],
+            'attempts' => (int)$row['attempts'],
+            'result_id' => $hasResult ? (int)$row['result_id'] : null,
+            'latest_score' => $hasResult ? (int)$row['latest_score'] : null,
+            'passed' => $hasResult ? (int)$row['latest_score'] >= $threshold : null,
+            'ended_at' => $hasResult ? $row['end_time'] : null,
+            'code' => $hasResult ? (string)$row['code'] : null,
+            'exam_paper_id' => $row['paper_id'] !== null ? (int)$row['paper_id'] : null,
+        ];
+
+        if ($channel === 'forum') {
+            $item['selected_categories'] = (string)$row['selected_categories'];
+            $item['matrix_oauth_mxid'] = $row['matrix_oauth_mxid'] !== null ? (string)$row['matrix_oauth_mxid'] : null;
+        } else {
+            $item['forum_oauth_user_id'] = $row['forum_oauth_user_id'] !== null ? (int)$row['forum_oauth_user_id'] : null;
+        }
+
+        $items[] = $item;
+    }
+
+    return ['channel' => $channel, 'items' => $items, 'total' => $total, 'page' => $page, 'per_page' => $perPage, 'pages' => (int)ceil($total / $perPage)];
+}
+
 // 单个候选人详情（基本信息 + 状态 + 最近成绩），候选人不存在返回 null。
 // 试卷结构由调用方通过 getExamPaper() 补充。
 function getCandidateDetail(string $channel, int $candidateId): ?array
