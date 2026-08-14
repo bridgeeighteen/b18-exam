@@ -993,7 +993,7 @@ paths:
     get:
       tags: [blacklist]
       summary: 黑名单列表
-      description: 按邮箱或原因关键词筛选，支持分页。
+      description: 按邮箱或原因关键词筛选，支持分页。每个条目含自动采集的 IP 列表与设备记录。
       security:
         - bearerAuth: [blacklist:read]
         - sessionAuth: []
@@ -1024,7 +1024,7 @@ paths:
     post:
       tags: [blacklist]
       summary: 新建黑名单条目
-      description: 邮箱必填且不可修改（条目主键）；IP 列表支持 IPv4 / IPv6，检测到被拉黑邮箱时系统会自动补充访问者 IP。
+      description: 邮箱必填且不可修改（条目主键）；IP 列表支持 IPv4 / IPv6，检测到被拉黑邮箱时系统会自动补充访问者 IP。命中黑名单时会自动采集设备记录（网页流程经安全验证页采集 UA / 位置，API 请求直接从 User-Agent 请求头记录）。
       security:
         - bearerAuth: [blacklist:write]
         - sessionAuth: []
@@ -1060,7 +1060,7 @@ paths:
     put:
       tags: [blacklist]
       summary: 更新黑名单条目
-      description: 更新 IP 列表与原因；邮箱作为条目主键不可修改。
+      description: 更新 IP 列表与原因；邮箱作为条目主键不可修改。设备记录为命中时自动采集，仅可查看。
       security:
         - bearerAuth: [blacklist:write]
         - sessionAuth: []
@@ -1684,7 +1684,7 @@ components:
           enum: [available, in_use, invalid_username, mas_unavailable]
     BlacklistItem:
       type: object
-      required: [id, email, ips, detection_count, reason, created_at, updated_at]
+      required: [id, email, ips, detection_count, reason, created_at, updated_at, devices]
       properties:
         id: { type: integer }
         email: { type: string, description: 邮箱（小写，条目主键） }
@@ -1696,6 +1696,31 @@ components:
         reason: { type: string, nullable: true }
         created_at: { type: string }
         updated_at: { type: string }
+        devices:
+          type: array
+          description: 命中时自动采集的设备记录（按 UA 哈希去重，仅展示）
+          items:
+            $ref: '#/components/schemas/BlacklistDeviceItem'
+    BlacklistDeviceItem:
+      type: object
+      required: [id, blacklist_id, ua, ua_hash, location, imei_captured, first_seen_at, last_seen_at]
+      properties:
+        id: { type: integer }
+        blacklist_id: { type: integer }
+        ua: { type: string, description: 设备 User-Agent（原始） }
+        ua_hash: { type: string, description: UA 的 SHA-256 哈希（去重键） }
+        location:
+          type: object
+          nullable: true
+          description: 浏览器 Geolocation API 采集的位置（拒绝授权时为 null）
+          properties:
+            latitude: { type: number }
+            longitude: { type: number }
+            accuracy: { type: number, nullable: true }
+            source: { type: string, enum: [geolocation, unknown] }
+        imei_captured: { type: boolean, description: 是否已采集 IMEI（仅存哈希，检测次数超过 3 次时强制尝试采集） }
+        first_seen_at: { type: string }
+        last_seen_at: { type: string }
     BlacklistList:
       allOf:
         - $ref: '#/components/schemas/Pagination'

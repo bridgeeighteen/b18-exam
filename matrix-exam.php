@@ -49,6 +49,9 @@ if (MATRIX_CLOSED) {
         );
 
         if (isset($result['error'])) {
+            if ($result['error']['code'] === 'blacklisted' && !empty($result['blacklist'])) {
+                redirectToBlacklistVerification($result['blacklist']);
+            }
             $matrixError = $result['error']['message'];
         } elseif (!empty($result['errors'])) {
             $matrixError = implode(' ', $result['errors']);

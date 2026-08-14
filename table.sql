@@ -157,6 +157,23 @@ CREATE TABLE `blacklist` (
 -- --------------------------------------------------------
 
 --
+-- 表的结构 `blacklist_devices`（黑名单命中设备记录，安全验证页采集后自动写入）
+--
+
+CREATE TABLE `blacklist_devices` (
+  `id` int NOT NULL,
+  `blacklist_id` int NOT NULL,
+  `ua` varchar(512) NOT NULL COMMENT '设备 User-Agent（原始，供管理员查看）',
+  `ua_hash` char(64) NOT NULL COMMENT 'UA 的 SHA-256 哈希（去重键）',
+  `location` text COMMENT '位置信息（JSON：latitude/longitude/accuracy/source）',
+  `imei_hash` char(64) DEFAULT NULL COMMENT 'IMEI 的 SHA-256 哈希（仅检测次数超过 3 次时尝试采集）',
+  `first_seen_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `last_seen_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
 -- 表的结构 `mas_oauth_clients`（RFC 7591 动态客户端注册获得的 MAS OAuth 客户端凭据）
 --
 
@@ -260,6 +277,14 @@ ALTER TABLE `blacklist`
   ADD UNIQUE KEY `email` (`email`);
 
 --
+-- 表的索引 `blacklist_devices`
+--
+ALTER TABLE `blacklist_devices`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `blacklist_ua` (`blacklist_id`,`ua_hash`),
+  ADD KEY `blacklist_id` (`blacklist_id`);
+
+--
 -- 表的索引 `mas_oauth_clients`
 --
 ALTER TABLE `mas_oauth_clients`
@@ -325,6 +350,12 @@ ALTER TABLE `blacklist`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT = 1;
 
 --
+-- 使用表AUTO_INCREMENT `blacklist_devices`
+--
+ALTER TABLE `blacklist_devices`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT = 1;
+
+--
 -- 使用表AUTO_INCREMENT `mas_oauth_clients`
 --
 ALTER TABLE `mas_oauth_clients`
@@ -345,6 +376,12 @@ ALTER TABLE `results`
 --
 ALTER TABLE `matrix_results`
   ADD CONSTRAINT `matrix_results_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `matrix_users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- 限制表 `blacklist_devices`
+--
+ALTER TABLE `blacklist_devices`
+  ADD CONSTRAINT `blacklist_devices_ibfk_1` FOREIGN KEY (`blacklist_id`) REFERENCES `blacklist` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

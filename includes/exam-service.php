@@ -96,8 +96,9 @@ function registerForumCandidate(string $username, string $email, array $categori
         return ['errors' => $errors];
     }
 
-    if (checkBlacklist($email, getClientIP()) !== null) {
-        return ['error' => ['code' => 'blacklisted', 'message' => '检测到该邮箱或 IP 地址已被列入黑名单，无法参加测试。如有疑问，请通过管理邮箱联系我们。']];
+    $blacklistHit = checkBlacklist($email, getClientIP());
+    if ($blacklistHit !== null) {
+        return ['error' => ['code' => 'blacklisted', 'message' => '检测到该邮箱或 IP 地址已被列入黑名单，无法参加测试。如有疑问，请通过管理邮箱联系我们。'], 'blacklist' => $blacklistHit];
     }
 
     $db = getPDO();
@@ -170,8 +171,9 @@ function registerMatrixCandidate(string $username, string $email, ?int $forumOau
         return ['errors' => $errors];
     }
 
-    if (checkBlacklist($email, getClientIP()) !== null) {
-        return ['error' => ['code' => 'blacklisted', 'message' => '检测到该邮箱或 IP 地址已被列入黑名单，无法参加测试。如有疑问，请通过管理邮箱联系我们。']];
+    $blacklistHit = checkBlacklist($email, getClientIP());
+    if ($blacklistHit !== null) {
+        return ['error' => ['code' => 'blacklisted', 'message' => '检测到该邮箱或 IP 地址已被列入黑名单，无法参加测试。如有疑问，请通过管理邮箱联系我们。'], 'blacklist' => $blacklistHit];
     }
 
     $db = getPDO();
@@ -390,8 +392,9 @@ function scoreSubmission(string $channel, int $candidateId, array $answers, ?int
         return ['error' => ['code' => 'not_found', 'message' => '错误：用户信息未找到。请立即通过管理邮箱报告此问题。']];
     }
 
-    if (checkBlacklist((string)$candidate['email'], getClientIP()) !== null) {
-        return ['error' => ['code' => 'blacklisted', 'message' => '检测到该邮箱或 IP 地址已被列入黑名单，无法提交测试。如有疑问，请通过管理邮箱联系我们。']];
+    $blacklistHit = checkBlacklist((string)$candidate['email'], getClientIP());
+    if ($blacklistHit !== null) {
+        return ['error' => ['code' => 'blacklisted', 'message' => '检测到该邮箱或 IP 地址已被列入黑名单，无法提交测试。如有疑问，请通过管理邮箱联系我们。'], 'blacklist' => $blacklistHit];
     }
 
     $stmt = getPDO()->prepare('SELECT * FROM exam_papers WHERE channel = ? AND candidate_id = ? ORDER BY id DESC LIMIT 1');

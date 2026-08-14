@@ -581,6 +581,10 @@ function handleCandidateCreate(array $params): void
     }
 
     if (isset($result['error'])) {
+        if ($result['error']['code'] === 'blacklisted' && !empty($result['blacklist'])) {
+            // API 请求无法展示安全验证页：直接以请求头中的 UA 记录设备信息后拦截
+            recordBlacklistDevice((int)$result['blacklist']['entry_id'], (string)($_SERVER['HTTP_USER_AGENT'] ?? ''), null, null);
+        }
         $statusMap = ['username_in_use' => 409, 'mas_unavailable' => 503, 'not_found' => 404, 'blacklisted' => 403];
         apiError($statusMap[$result['error']['code']] ?? 422, $result['error']['code'], $result['error']['message']);
     }
@@ -635,6 +639,10 @@ function handleCandidateSubmit(array $params): void
 
     $submission = scoreSubmission($channel, (int)($params['id'] ?? 0), $answers, $paperId > 0 ? $paperId : null);
     if (isset($submission['error'])) {
+        if ($submission['error']['code'] === 'blacklisted' && !empty($submission['blacklist'])) {
+            // API 请求无法展示安全验证页：直接以请求头中的 UA 记录设备信息后拦截
+            recordBlacklistDevice((int)$submission['blacklist']['entry_id'], (string)($_SERVER['HTTP_USER_AGENT'] ?? ''), null, null);
+        }
         $statusMap = ['not_found' => 404, 'time_violation' => 409, 'no_paper' => 409, 'stale_paper' => 409, 'blacklisted' => 403];
         apiError($statusMap[$submission['error']['code']] ?? 422, $submission['error']['code'], $submission['error']['message']);
     }

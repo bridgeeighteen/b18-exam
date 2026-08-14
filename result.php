@@ -27,6 +27,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $submission = scoreSubmission('forum', $userId, extractAnswerMap($_POST), $paperId > 0 ? $paperId : null);
 
     if (isset($submission['error'])) {
+        if ($submission['error']['code'] === 'blacklisted' && !empty($submission['blacklist'])) {
+            redirectToBlacklistVerification($submission['blacklist']);
+        }
         if ($submission['error']['code'] === 'time_violation') {
             $timeCheatDetected = true;
         } else {

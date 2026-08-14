@@ -16,8 +16,8 @@ $message = isset($_GET['msg']) ? trim((string)$_GET['msg']) : '';
 $error = isset($_GET['err']) ? trim((string)$_GET['err']) : '';
 $newKeyPlain = null;
 
-// 创建密钥（服务端处理）
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// 创建密钥（服务端处理，仅匹配创建表单，避免与列表中的停用 / 启用 / 删除表单相互触发）
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['key_action']) && $_POST['key_action'] === 'create') {
     if (!validateCSRFToken($_POST['csrf_token'] ?? null)) {
         $error = 'CSRF 验证失败，请刷新页面后重试。';
     } else {
@@ -119,6 +119,7 @@ $scopeLabels = [
                     <h5 class="card-title">创建新密钥</h5>
                     <form method="post" action="keys.php">
                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generateCSRFToken()); ?>">
+                        <input type="hidden" name="key_action" value="create">
                         <div class="form-section">
                             <label for="name" class="form-label">名称</label>
                             <input type="text" class="form-control" id="name" name="name" maxlength="50" placeholder="例如：论坛机器人" required>

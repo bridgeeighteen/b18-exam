@@ -289,10 +289,10 @@ curl -X POST -H "$AUTH" -H "Content-Type: application/json" \
 
 | 方法与路径 | 说明 |
 | --- | --- |
-| `GET /blacklist` | 列表：`q`（匹配邮箱或原因），分页 |
+| `GET /blacklist` | 列表：`q`（匹配邮箱或原因），分页；每个条目含自动采集的 IP 列表与设备记录 |
 | `POST /blacklist` | 新建：`{"email":"...","ips":["1.2.3.4","2001:db8::1"],"reason":"可选"}`，邮箱必填且不可修改 |
 | `PUT /blacklist/{id}` | 整体更新：`{"ips":[...],"reason":"..."}`（邮箱作为条目主键不可修改） |
-| `DELETE /blacklist/{id}` | 删除 |
+| `DELETE /blacklist/{id}` | 删除（其设备记录级联删除） |
 
 条目对象：
 
@@ -304,12 +304,27 @@ curl -X POST -H "$AUTH" -H "Content-Type: application/json" \
   "detection_count": 3,
   "reason": "邀请码滥用",
   "created_at": "2026-08-09 12:00:00",
-  "updated_at": "2026-08-09 12:00:00"
+  "updated_at": "2026-08-09 12:00:00",
+  "devices": [
+    {
+      "id": 2,
+      "blacklist_id": 1,
+      "ua": "Mozilla/5.0 ...",
+      "ua_hash": "1f2c…",
+      "location": { "latitude": 31.23, "longitude": 121.47, "accuracy": 35.0, "source": "geolocation" },
+      "imei_captured": true,
+      "first_seen_at": "2026-08-09 12:01:00",
+      "last_seen_at": "2026-08-12 09:30:00"
+    }
+  ]
 }
 ```
 
 - 黑名单在候选人登记与交卷时生效：命中条目（邮箱或访问者 IP）的请求返回 `403 blacklisted`；
+- 命中后系统会新增一条设备记录：网页流程先展示安全验证页（`verify-device.php`）采集设备的 UA 与位置信息（浏览器 Geolocation API，拒绝授权则跳过位置），存入数据库后才拦截本次请求；API 请求无法展示验证页，直接从请求头中的 User-Agent 记录设备信息后返回 403；
+- 同一设备（按 UA 的 SHA-256 哈希）重复命中时跳过新增，仅刷新最近出现时间；检测次数超过 3 次时，安全验证页强制尝试采集设备 IMEI（仅存 SHA-256 哈希，无法获取时倒计时结束后照常拦截）；
 - 检测到被拉黑邮箱时，系统自动将访问者 IP 补充进该条目（若尚不存在），并累计该条目的 `detection_count`；IP 命中时同样累计其所属条目的检测次数；
+- 设备记录仅按邮箱条目关联展示，不支持手动增删改；
 - 邮箱比较不区分大小写（存储为小写）。
 
 ## 5. 完整考试流程示例

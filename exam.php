@@ -46,6 +46,9 @@ if (FORUM_CLOSED) {
             );
 
             if (isset($result['error'])) {
+                if ($result['error']['code'] === 'blacklisted' && !empty($result['blacklist'])) {
+                    redirectToBlacklistVerification($result['blacklist']);
+                }
                 $examError = '错误：' . $result['error']['message'];
             } elseif (!empty($result['errors'])) {
                 $examError = '错误：' . implode(' ', $result['errors']);

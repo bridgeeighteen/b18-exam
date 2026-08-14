@@ -173,9 +173,24 @@ CREATE TABLE `blacklist` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `blacklist_devices` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `blacklist_id` int NOT NULL,
+  `ua` varchar(512) NOT NULL COMMENT '设备 User-Agent（原始，供管理员查看）',
+  `ua_hash` char(64) NOT NULL COMMENT 'UA 的 SHA-256 哈希（去重键）',
+  `location` text COMMENT '位置信息（JSON：latitude/longitude/accuracy/source）',
+  `imei_hash` char(64) DEFAULT NULL COMMENT 'IMEI 的 SHA-256 哈希（仅检测次数超过 3 次时尝试采集）',
+  `first_seen_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `last_seen_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `blacklist_ua` (`blacklist_id`,`ua_hash`),
+  KEY `blacklist_id` (`blacklist_id`),
+  CONSTRAINT `blacklist_devices_ibfk_1` FOREIGN KEY (`blacklist_id`) REFERENCES `blacklist` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
 
-其中 `exam_papers` 为持久化试卷表（答题页与系统 API 共用，用于保证交卷按出卷题目计分、免考状态由服务端记录），`blacklist` 为测试黑名单表（按邮箱拉黑并自动记录访问 IP、累计检测次数）。
+其中 `exam_papers` 为持久化试卷表（答题页与系统 API 共用，用于保证交卷按出卷题目计分、免考状态由服务端记录），`blacklist` 为测试黑名单表（按邮箱拉黑并自动记录访问 IP、累计检测次数），`blacklist_devices` 为黑名单命中设备记录表（安全验证页采集 UA / 位置并按 UA 哈希去重，检测次数超过 3 次时强制尝试采集 IMEI 仅存哈希）。
 
 ### 配置 Matrix 测试通道（可选）
 
@@ -323,7 +338,7 @@ CREATE TABLE `blacklist` (
 | `GET /api/v1/candidates/{id}/paper?channel=forum` | 获取已生成的试卷（题目不含答案） |
 | `POST /api/v1/candidates/{id}/submissions` | 交卷计分，返回分数与邀请码 / 注册 Token（可选 `paper_id`，过期试卷返回 `409 stale_paper`） |
 | `GET /api/v1/matrix/usernames/{name}/availability` | 核验 Matrix 用户名是否可用（免考流程使用） |
-| `GET /api/v1/blacklist` · `POST /api/v1/blacklist` | 黑名单列表（筛选 `q`）/ 新建（请求体 `email` 必填，`ips` 支持多个 IP） |
+| `GET /api/v1/blacklist` · `POST /api/v1/blacklist` | 黑名单列表（筛选 `q`，条目含自动采集的 IP 与设备记录）/ 新建（请求体 `email` 必填，`ips` 支持多个 IP） |
 | `PUT /api/v1/blacklist/{id}` · `DELETE /api/v1/blacklist/{id}` | 更新（IP 列表与原因）/ 删除黑名单条目 |
 
 考试流程中的候选人登记接口同样受作用域与限流保护；面向用户的网页流程（Turnstile 验证码与 OAuth 免考）保持不变。
@@ -345,7 +360,7 @@ CREATE TABLE `blacklist` (
 - [x] 管理面板：数据统计、测试信息、题目管理（手动录入 / 编辑 / 删除 / Markdown 表格导入导出）、黑名单管理
 - [x] 管理面板双平台管理员校验（论坛 OAuth 路径需同时为论坛管理员与千万桥管理员）
 - [x] 系统 REST API（`/api/v1/...`，覆盖管理端与完整考试流程、API 密钥、作用域、限流、审计日志）
-- [x] 测试黑名单：按邮箱拉黑（支持关联多个 IP），命中时拒绝登记与交卷并自动记录访问 IP、累计检测次数
+- [x] 测试黑名单：按邮箱拉黑（支持关联多个 IP），命中时拒绝登记与交卷、自动记录访问 IP 并累计检测次数；命中后先经安全验证页采集设备信息（UA / 位置，检测次数超过 3 次时强制尝试采集 IMEI 仅存哈希）再拦截请求
 
 你也可以到 [Open Issues](https://codeberg.org/bridgeeighteen/b18-exam/issues) 页查看所有请求的功能（以及已知的问题）。
 

@@ -106,7 +106,7 @@ $queryString = function (array $overrides) use ($data) {
 <?php require './views/nav.php'; ?>
 <div class="page">
     <h1 class="page-title">黑名单</h1>
-    <p class="page-subtitle">被拉黑的邮箱或 IP 地址无法开始或提交测试。检测到被拉黑邮箱时，系统会自动记录访问者 IP 并累计检测次数。</p>
+    <p class="page-subtitle">被拉黑的邮箱或 IP 地址无法开始或提交测试。命中黑名单时，系统会先经安全验证页采集设备信息（UA / 位置；检测次数超过 3 次时强制尝试采集 IMEI，仅存哈希）并安全记录，随后才拦截请求。检测到被拉黑邮箱时，系统还会自动记录访问者 IP 并累计检测次数。</p>
 
     <?php if ($message !== '') : ?>
         <div class="alert alert-success mt-3" role="alert"><?php echo htmlspecialchars($message); ?></div>
@@ -154,6 +154,51 @@ $queryString = function (array $overrides) use ($data) {
                     </form>
                 </div>
             </div>
+            <?php if ($editing !== null) : ?>
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">设备记录</h5>
+                    <p class="card-text text-muted small">命中黑名单时由安全验证页自动采集，仅按邮箱条目关联查看，不支持手动管理。</p>
+                    <?php if ($editing['devices'] === []) : ?>
+                        <p class="text-muted mb-0">暂无设备记录</p>
+                    <?php else : ?>
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">UA</th>
+                                        <th scope="col">位置</th>
+                                        <th scope="col">IMEI</th>
+                                        <th scope="col">首次出现</th>
+                                        <th scope="col">最近出现</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($editing['devices'] as $device) : ?>
+                                        <tr>
+                                            <td><code class="text-break small"><?php echo htmlspecialchars($device['ua']); ?></code></td>
+                                            <td>
+                                                <?php if (is_array($device['location']) && isset($device['location']['latitude'], $device['location']['longitude'])) : ?>
+                                                    <span class="badge bg-light text-dark border font-monospace"><?php echo htmlspecialchars(number_format((float)$device['location']['latitude'], 4)); ?>, <?php echo htmlspecialchars(number_format((float)$device['location']['longitude'], 4)); ?></span>
+                                                    <?php if (isset($device['location']['accuracy']) && $device['location']['accuracy'] !== null) : ?>
+                                                        <small class="text-muted">±<?php echo htmlspecialchars((string)round((float)$device['location']['accuracy'])); ?>m</small>
+                                                    <?php endif; ?>
+                                                <?php else : ?>
+                                                    <span class="text-muted">—</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td><?php echo $device['imei_captured'] ? '<span class="badge bg-success">已采集</span>' : '<span class="badge bg-light text-dark border">未采集</span>'; ?></td>
+                                            <td class="small"><?php echo htmlspecialchars($device['first_seen_at']); ?></td>
+                                            <td class="small"><?php echo htmlspecialchars($device['last_seen_at']); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php endif; ?>
         </div>
         <div class="col-md-7">
             <form method="get" action="blacklist.php" class="row g-2 align-items-end mb-3">
@@ -179,6 +224,7 @@ $queryString = function (array $overrides) use ($data) {
                                     <th scope="col">邮箱</th>
                                     <th scope="col">IP 地址</th>
                                     <th scope="col">检测次数</th>
+                                    <th scope="col">设备</th>
                                     <th scope="col">原因</th>
                                     <th scope="col">创建时间</th>
                                     <th scope="col">操作</th>
@@ -186,7 +232,7 @@ $queryString = function (array $overrides) use ($data) {
                             </thead>
                             <tbody>
                                 <?php if ($data['items'] === []) : ?>
-                                    <tr><td colspan="7" class="text-muted">暂无条目</td></tr>
+                                    <tr><td colspan="8" class="text-muted">暂无条目</td></tr>
                                 <?php else : ?>
                                     <?php foreach ($data['items'] as $entry) : ?>
                                         <tr>
@@ -202,6 +248,13 @@ $queryString = function (array $overrides) use ($data) {
                                                 <?php endif; ?>
                                             </td>
                                             <td><span class="badge bg-<?php echo (int)$entry['detection_count'] > 0 ? 'warning' : 'light text-dark border'; ?>"><?php echo (int)$entry['detection_count']; ?></span></td>
+                                            <td>
+                                                <?php if ($entry['devices'] === []) : ?>
+                                                    <span class="text-muted">—</span>
+                                                <?php else : ?>
+                                                    <a class="badge bg-light text-dark border text-decoration-none" href="?edit=<?php echo (int)$entry['id']; ?>"><?php echo count($entry['devices']); ?> 台</a>
+                                                <?php endif; ?>
+                                            </td>
                                             <td><?php echo $entry['reason'] !== null ? htmlspecialchars($entry['reason']) : '—'; ?></td>
                                             <td><?php echo htmlspecialchars($entry['created_at']); ?></td>
                                             <td class="text-nowrap">
