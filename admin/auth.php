@@ -78,7 +78,7 @@ function adminVerifyForumUser(string $oauthAccessToken): ?array
     if ($adminToken !== '' && strpos($adminToken, 'YOUR_') !== 0) {
         $headers = [
             'Authorization: Token ' . $adminToken,
-            'User-Agent: b18-exam/' . VERSION . ' b18-admin-php/1.0.0',
+            'User-Agent: b18-exam/' . VERSION . ' b18-codegen-php/1.0.0',
         ];
         $ch = curl_init(oauthSiteUrl(API_SITE, '/api/users/' . rawurlencode($userId) . '?include=groups'));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);

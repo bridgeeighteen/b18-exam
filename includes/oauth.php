@@ -40,7 +40,7 @@ function oauthHttpPostForm(string $url, array $fields): ?array
     curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($fields));
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-    curl_setopt($ch, CURLOPT_USERAGENT, 'b18-exam/' . VERSION . ' b18-oauth-php/1.0.0');
+    curl_setopt($ch, CURLOPT_USERAGENT, 'b18-exam/' . VERSION . ' b18-codegen-php/1.0.0');
     $response = curl_exec($ch);
     $error = curl_error($ch);
     $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -81,7 +81,7 @@ function oauthHttpPostJson(string $url, array $payload): ?array
     curl_setopt($ch, CURLOPT_TIMEOUT, 30);
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
         'Content-Type: application/json',
-        'User-Agent: b18-exam/' . VERSION . ' b18-oauth-php/1.0.0',
+        'User-Agent: b18-exam/' . VERSION . ' b18-codegen-php/1.0.0',
     ]);
     $response = curl_exec($ch);
     $error = curl_error($ch);
@@ -114,12 +114,12 @@ function oauthHttpGet(string $url, string $accessToken, ?string $queryParam = nu
         $separator = strpos($url, '?') === false ? '?' : '&';
         $url .= $separator . rawurlencode($queryParam) . '=' . rawurlencode($accessToken);
         $headers = [
-            'User-Agent: b18-exam/' . VERSION . ' b18-oauth-php/1.0.0',
+            'User-Agent: b18-exam/' . VERSION . ' b18-codegen-php/1.0.0',
         ];
     } else {
         $headers = [
             'Authorization: Bearer ' . $accessToken,
-            'User-Agent: b18-exam/' . VERSION . ' b18-oauth-php/1.0.0',
+            'User-Agent: b18-exam/' . VERSION . ' b18-codegen-php/1.0.0',
         ];
     }
 
@@ -287,7 +287,7 @@ function oauthMasClientMetadata(): array
     $site = 'https://' . SITE;
     return [
         'application_type' => 'web',
-        'client_name' => 'b18-exam 入站测试系统',
+        'client_name' => '入站测试系统',
         'client_uri' => $site . '/',
         'redirect_uris' => [
             $site . '/oauth-matrix.php',

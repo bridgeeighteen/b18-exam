@@ -554,7 +554,7 @@ function fetchDoorKey(string $key): ?string
     $headers = [
         'Content-Type: application/json; charset=UTF-8',
         'Authorization: Token ' . API_X_CSRF_TOKEN,
-        'User-Agent: b18-exam/' . VERSION . ' b18-codeget-php/1.0.0',
+        'User-Agent: b18-exam/' . VERSION . ' b18-codegen-php/1.0.0',
     ];
 
     $payload = [

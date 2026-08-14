@@ -25,7 +25,7 @@ function matrixApiRequest(string $method, string $path, array $payload = []): ?a
     $headers = [
         'Content-Type: application/json; charset=UTF-8',
         'Authorization: Bearer ' . MATRIX_API_TOKEN,
-        'User-Agent: b18-exam/' . VERSION . ' b18-matrix-php/1.0.0',
+        'User-Agent: b18-exam/' . VERSION . ' b18-codegen-php/1.0.0',
     ];
 
     $options = [
