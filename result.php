@@ -22,8 +22,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     $userId = (int)($_POST['user_id'] ?? 0);
+    $paperId = (int)($_POST['paper_id'] ?? 0);
 
-    $submission = scoreSubmission('forum', $userId, extractAnswerMap($_POST));
+    $submission = scoreSubmission('forum', $userId, extractAnswerMap($_POST), $paperId > 0 ? $paperId : null);
 
     if (isset($submission['error'])) {
         if ($submission['error']['code'] === 'time_violation') {

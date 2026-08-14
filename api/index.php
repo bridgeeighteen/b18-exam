@@ -518,7 +518,7 @@ function handleCandidatesList(array $params): void
 
     $filters = [
         'q' => apiString('q', '', 100),
-        'status' => apiEnum('status', ['registered', 'paper_generated', 'submitted'], ''),
+        'status' => apiEnum('status', ['registered', 'paper_generated', 'submitted', 'not_started', 'in_progress', 'abandoned', 'pass', 'fail'], ''),
         'date_from' => apiString('date_from', '', 10),
         'date_to' => apiString('date_to', '', 10),
     ];
@@ -597,6 +597,7 @@ function handleCandidateCreate(array $params): void
     apiRespond([
         'candidate' => $result['candidate'],
         'paper' => $paperResult['paper'],
+        'restarted' => !empty($result['restarted']),
         'matrix_oauth_mxid' => $result['matrix_oauth_mxid'] ?? null,
         'forum_oauth_exempt' => $result['forum_oauth_exempt'] ?? null,
         'username_notice' => $result['username_notice'] ?? null,
@@ -630,9 +631,11 @@ function handleCandidateSubmit(array $params): void
         );
     }
 
-    $submission = scoreSubmission($channel, (int)($params['id'] ?? 0), $answers);
+    $paperId = apiInt('paper_id', 0, 1);
+
+    $submission = scoreSubmission($channel, (int)($params['id'] ?? 0), $answers, $paperId > 0 ? $paperId : null);
     if (isset($submission['error'])) {
-        $statusMap = ['not_found' => 404, 'time_violation' => 409, 'no_paper' => 409, 'blacklisted' => 403];
+        $statusMap = ['not_found' => 404, 'time_violation' => 409, 'no_paper' => 409, 'stale_paper' => 409, 'blacklisted' => 403];
         apiError($statusMap[$submission['error']['code']] ?? 422, $submission['error']['code'], $submission['error']['message']);
     }
 

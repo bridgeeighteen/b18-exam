@@ -109,7 +109,7 @@ API 密钥在创建时选择作用域。所有作用域：
 | 403 | `https_required` / `key_disabled` / `key_expired` / `forbidden` / `csrf_failed` / `blacklisted` | 安全或权限类错误 / 命中测试黑名单 |
 | 404 | `not_found` | 资源、路径或接口版本不存在 |
 | 405 | `method_not_allowed` | 该路径不支持请求方法（附 `Allow` 头） |
-| 409 | `duplicate` / `username_in_use` / `time_violation` / `no_paper` | 冲突（重复题目、用户名占用、超时交卷、未出卷） |
+| 409 | `duplicate` / `username_in_use` / `time_violation` / `no_paper` / `stale_paper` | 冲突（重复题目、用户名占用、超时交卷、未出卷、试卷已过期） |
 | 422 | `validation_failed` | 参数校验失败 |
 | 429 | `rate_limited` | 请求过于频繁 |
 | 500 | `internal_error` | 服务器内部错误 |
@@ -245,11 +245,11 @@ curl -X POST -H "$AUTH" -H "Content-Type: application/json" \
 
 #### 候选人 / 考试流程（`exam:read` / `exam:write`）
 
-候选人列表与详情用于外部工具查看考试进程与治理（`registered` 已登记 / `paper_generated` 已出卷 / `submitted` 已交卷）：
+候选人列表以用户为维度列出全部登记用户，已交卷用户附带最近成绩与凭据，未交卷用户按状态区分（`submitted` 已交卷 / `in_progress` 进行中 / `abandoned` 中途退出 / `not_started` 未开始）。1.1.0 RC1 / RC2 旧筛选值仍可使用：`registered`（= `not_started`）、`paper_generated`（= 已开始未交卷，含 `in_progress` 与 `abandoned`）：
 
 | 方法与路径 | 说明 |
 | --- | --- |
-| `GET /candidates?channel=forum` | 列表：`channel`（必填）/ `status` / `q` / `date_from` / `date_to`（按登记时间） |
+| `GET /candidates?channel=forum` | 列表：`channel`（必填）/ `status`（`submitted` / `in_progress` / `abandoned` / `not_started` / `pass` / `fail` / `registered` / `paper_generated`）/ `q` / `date_from` / `date_to`（按登记或最近交卷时间） |
 | `GET /candidates/{id}?channel=forum` | 详情：信息 + 状态 + 最近成绩（含凭据）+ 最近试卷 |
 | `DELETE /candidates/{id}?channel=forum` | 删除候选人（试卷与记录级联删除） |
 
@@ -259,7 +259,9 @@ curl -X POST -H "$AUTH" -H "Content-Type: application/json" \
 {
   "id": 1, "channel": "forum", "username": "张三", "email": "zhangsan@example.com",
   "start_time": "2026-08-09 09:30:00", "status": "submitted",
-  "exam_paper_id": 5, "latest_score": 85, "passed": true, "ended_at": "2026-08-09 09:45:00",
+  "attempts": 1, "result_id": 3, "exam_paper_id": 5,
+  "latest_score": 85, "passed": true, "ended_at": "2026-08-09 09:45:00",
+  "code": "B18R@ABCD1234",
   "selected_categories": "IT,ACGN", "matrix_oauth_mxid": null
 }
 ```
@@ -349,9 +351,18 @@ curl -H "$AUTH" "$BASE/candidates/1?channel=forum"
 
 Matrix 通道流程相同，仅需将 `channel` 换为 `matrix`（用户名须为 MAS localpart，凭据为注册 Token）。免考标记（`matrix_oauth_mxid` / `forum_oauth_user_id`）由服务端记录，交卷时自动跳过礼仪题计分。
 
+### 中途退出与重新登记
+
+候选人中途退出（开始后未交卷）时可以随时重新登记重考，无需等待或申诉：
+
+- `POST /candidates` 使用相同邮箱（forum）或相同邮箱 / 用户名（matrix）时，复用原候选人记录、生成新试卷并重置计时，响应中 `restarted` 为 `true`；
+- matrix 通道可用不同用户名 + 相同邮箱复用记录（期望用户名会随之更新）；
+- 旧试卷即告作废：交卷（网页与 API 均会携带 `paper_id`）若对应的不是当前最新试卷，返回 409 `stale_paper`，避免旧页面的延迟提交污染新一次测试；
+- 未交卷的候选人按 `start_time` 与测试时长自动归类为 `in_progress`（进行中）或 `abandoned`（中途退出），可通过 `GET /candidates?channel=forum&status=abandoned` 排查。
+
 ## 6. 常用集成场景
 
 - **论坛机器人**：`POST /candidates` 登记 → `GET /candidates/{id}/paper` 发题 → 收答后 `POST /candidates/{id}/submissions` 计分并把凭据私发给用户。
 - **监控服务**（免认证）：定时 `GET /health`；接入前先 `GET /meta` 了解通道开关与分数线。
 - **数据归档**：`GET /results?channel=forum&date_from=...&date_to=...` 分页拉取全部记录；配合 `page` 与 `Link` 头翻页。
-- **考试治理**：`GET /candidates?channel=matrix&status=paper_generated` 找出出卷未交卷的候选人，按需 `DELETE /candidates/{id}` 清理。
+- **考试治理**：`GET /candidates?channel=matrix&status=abandoned` 找出中途退出（超时未交卷）的候选人，`status=in_progress` 查看进行中，`status=not_started` 查看仅登记未开始的用户；按需 `DELETE /candidates/{id}` 清理。

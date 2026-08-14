@@ -318,10 +318,10 @@ CREATE TABLE `blacklist` (
 | `GET /api/v1/keys` · `POST /api/v1/keys` · `PATCH /api/v1/keys/{id}` · `DELETE /api/v1/keys/{id}` | API 密钥管理（`PATCH` 请求体 `{"enabled":true\|false}` 启停用） |
 | `GET /api/v1/audit` | 审计日志（筛选 `q` / `action` / `date_from` / `date_to`） |
 | `GET /api/v1/system` | 系统信息（只读） |
-| `GET /api/v1/candidates` · `GET /api/v1/candidates/{id}` · `DELETE /api/v1/candidates/{id}` | 候选人列表（状态 `registered` / `paper_generated` / `submitted`）/ 详情（含试卷与凭据）/ 删除 |
-| `POST /api/v1/candidates` | 登记候选人并生成试卷（请求体 `channel` 为 `forum` 或 `matrix`） |
+| `GET /api/v1/candidates` · `GET /api/v1/candidates/{id}` · `DELETE /api/v1/candidates/{id}` | 候选人列表（状态 `submitted` / `in_progress` / `abandoned` / `not_started`；已交卷者含凭据与次数）/ 详情（含试卷与凭据）/ 删除 |
+| `POST /api/v1/candidates` | 登记候选人并生成试卷（请求体 `channel` 为 `forum` 或 `matrix`；中途退出后重新登记复用记录并重置计时，返回 `restarted`） |
 | `GET /api/v1/candidates/{id}/paper?channel=forum` | 获取已生成的试卷（题目不含答案） |
-| `POST /api/v1/candidates/{id}/submissions` | 交卷计分，返回分数与邀请码 / 注册 Token |
+| `POST /api/v1/candidates/{id}/submissions` | 交卷计分，返回分数与邀请码 / 注册 Token（可选 `paper_id`，过期试卷返回 `409 stale_paper`） |
 | `GET /api/v1/matrix/usernames/{name}/availability` | 核验 Matrix 用户名是否可用（免考流程使用） |
 | `GET /api/v1/blacklist` · `POST /api/v1/blacklist` | 黑名单列表（筛选 `q`）/ 新建（请求体 `email` 必填，`ips` 支持多个 IP） |
 | `PUT /api/v1/blacklist/{id}` · `DELETE /api/v1/blacklist/{id}` | 更新（IP 列表与原因）/ 删除黑名单条目 |

@@ -17,6 +17,8 @@ $usernameNotice = null;
 $user = null;
 $questions = [];
 $forumOauthExempt = false;
+$restarted = false;
+$paperId = null;
 
 if (MATRIX_CLOSED) {
 } elseif (!MATRIX_ENABLED) {
@@ -54,12 +56,14 @@ if (MATRIX_CLOSED) {
             $user = $result['candidate'];
             $usernameNotice = $result['username_notice'];
             $forumOauthExempt = $result['forum_oauth_exempt'];
+            $restarted = !empty($result['restarted']);
 
             $paperResult = buildExamPaper('matrix', (int)$user['id']);
             if (isset($paperResult['error'])) {
                 $matrixError = $paperResult['error']['message'];
             } else {
                 $questions = $paperResult['paper']['questions'];
+                $paperId = (int)$paperResult['paper']['id'];
             }
         }
     }
@@ -135,6 +139,7 @@ if (MATRIX_CLOSED) {
                 </table>
                 <form action="matrix-result.php" method="post">
                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generateCSRFToken()); ?>">
+                    <input type="hidden" name="paper_id" value="<?php echo htmlspecialchars($paperId ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                     <input type="hidden" name="user_id" value="<?php echo htmlspecialchars($user['id'], ENT_QUOTES, 'UTF-8'); ?>">
                     <input type="hidden" name="oauth_exempt" value="1">
                     <button type="submit" class="btn btn-primary btn-lg w-100">确认并获取注册 Token</button>
@@ -178,6 +183,9 @@ if (MATRIX_CLOSED) {
     <?php if ($usernameNotice !== null) : ?>
         <div class="alert alert-info" role="alert"><?php echo htmlspecialchars($usernameNotice); ?></div>
     <?php endif; ?>
+    <?php if ($restarted) : ?>
+        <div class="alert alert-info" role="alert">检测到此前已登记，测试进度已重置并重新计时。</div>
+    <?php endif; ?>
     <div class="card mb-4">
         <div class="card-body">
             <h3 class="section-head">测试信息</h3>
@@ -202,6 +210,7 @@ if (MATRIX_CLOSED) {
 
 <form id="matrixExamForm" action="matrix-result.php" method="post">
     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generateCSRFToken()); ?>">
+    <input type="hidden" name="paper_id" value="<?php echo htmlspecialchars($paperId ?? '', ENT_QUOTES, 'UTF-8'); ?>">
     <input type="hidden" name="user_id" value="<?php echo htmlspecialchars(isset($user['id']) ? $user['id'] : '', ENT_QUOTES, 'UTF-8'); ?>">
     <?php
     $questionNumber = 1; // 初始化题号

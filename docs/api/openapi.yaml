@@ -539,8 +539,10 @@ paths:
       tags: [candidates]
       summary: 候选人列表
       description: |
-        按通道列出候选人及考试状态（`registered` 已登记 / `paper_generated` 已出卷 /
-        `submitted` 已交卷），支持关键词、状态与登记时间筛选、分页。
+        按通道列出全部登记用户及考试状态（`submitted` 已交卷 / `in_progress` 进行中 /
+        `abandoned` 中途退出 / `not_started` 未开始），已交卷用户附带最近成绩与凭据。
+        支持关键词、状态与时间筛选、分页。兼容旧值：`registered`（= `not_started`）、
+        `paper_generated`（= 已开始未交卷，含 `in_progress` 与 `abandoned`）。
       security:
         - bearerAuth: [exam:read]
         - sessionAuth: []
@@ -556,14 +558,14 @@ paths:
           in: query
           schema:
             type: string
-            enum: [registered, paper_generated, submitted]
+            enum: [submitted, in_progress, abandoned, not_started, pass, fail, registered, paper_generated]
         - name: date_from
           in: query
-          description: 登记时间下界（YYYY-MM-DD，含当天）
+          description: 时间下界（YYYY-MM-DD，含当天，按登记或最近交卷时间）
           schema: { type: string, format: date }
         - name: date_to
           in: query
-          description: 登记时间上界（YYYY-MM-DD，含当天）
+          description: 时间上界（YYYY-MM-DD，含当天，按登记或最近交卷时间）
           schema: { type: string, format: date }
       responses:
         '200':
@@ -589,7 +591,9 @@ paths:
       summary: 登记候选人并生成试卷
       description: |
         登记候选人（`channel` 为 `forum` 或 `matrix`）并立即生成试卷、记录开始时间。
-        返回候选人信息与试卷（题目不含答案）。交卷后可再次登记以重考。
+        返回候选人信息与试卷（题目不含答案）。交卷后可再次登记以重考：
+        中途退出后重新登记会复用原记录、生成新试卷并重置计时，
+        此时响应中 `restarted` 为 `true`（matrix 通道可用不同用户名 + 相同邮箱复用记录）。
       security:
         - bearerAuth: [exam:write]
         - sessionAuth: []
@@ -723,6 +727,8 @@ paths:
       description: |
         提交答卷并计分，返回分数、是否通过及邀请码 / 注册 Token。
         超时提交（time_violation）会删除该候选人及其记录。
+        携带 `paper_id` 时校验其必须为候选人当前最新试卷，否则返回
+        409 `stale_paper`（防止中途退出重新登记后旧页面延迟交卷污染新一次测试）。
       security:
         - bearerAuth: [exam:write]
         - sessionAuth: []
@@ -1394,7 +1400,7 @@ components:
           description: 仅 matrix 通道可选；非空时礼仪测试免考
     CandidateCreateResponse:
       type: object
-      required: [candidate, paper]
+      required: [candidate, paper, restarted]
       properties:
         candidate:
           type: object
@@ -1407,16 +1413,19 @@ components:
             forum_oauth_user_id: { type: integer, nullable: true }
         paper:
           $ref: '#/components/schemas/Paper'
+        restarted:
+          type: boolean
+          description: 是否复用既有登记记录（重考 / 中途退出后重新登记），true 时试卷与计时已重置
         matrix_oauth_mxid: { type: string, nullable: true }
         forum_oauth_exempt: { type: boolean, nullable: true }
         username_notice: { type: string, nullable: true }
     CandidateStatus:
       type: string
-      enum: [registered, paper_generated, submitted]
-      description: registered 已登记 / paper_generated 已出卷 / submitted 已交卷
+      enum: [submitted, in_progress, abandoned, not_started]
+      description: submitted 已交卷 / in_progress 进行中 / abandoned 中途退出（超时未交卷）/ not_started 未开始
     CandidateListItem:
       type: object
-      required: [id, channel, username, email, start_time, status, exam_paper_id, latest_score, passed, ended_at]
+      required: [id, channel, username, email, start_time, status, attempts, result_id, exam_paper_id, latest_score, passed, ended_at, code]
       properties:
         id: { type: integer }
         channel: { type: string, enum: [forum, matrix] }
@@ -1424,10 +1433,13 @@ components:
         email: { type: string }
         start_time: { type: string, nullable: true }
         status: { $ref: '#/components/schemas/CandidateStatus' }
+        attempts: { type: integer, description: 累计交卷次数 }
+        result_id: { type: integer, nullable: true, description: 最近一次测试记录 ID }
         exam_paper_id: { type: integer, nullable: true }
         latest_score: { type: integer, nullable: true }
         passed: { type: boolean, nullable: true }
         ended_at: { type: string, nullable: true }
+        code: { type: string, nullable: true, description: 最近一次凭据（邀请码 / 注册 Token） }
         selected_categories: { type: string, nullable: true }
         matrix_oauth_mxid: { type: string, nullable: true }
         forum_oauth_user_id: { type: integer, nullable: true }
@@ -1443,7 +1455,7 @@ components:
                 $ref: '#/components/schemas/CandidateListItem'
     CandidateDetail:
       type: object
-      required: [channel, id, username, email, start_time, status, exam_paper_id, result, paper]
+      required: [channel, id, username, email, start_time, status, attempts, exam_paper_id, result, paper]
       properties:
         channel: { type: string, enum: [forum, matrix] }
         id: { type: integer }
@@ -1451,6 +1463,7 @@ components:
         email: { type: string }
         start_time: { type: string, nullable: true }
         status: { $ref: '#/components/schemas/CandidateStatus' }
+        attempts: { type: integer, description: 累计交卷次数 }
         exam_paper_id: { type: integer, nullable: true }
         result:
           type: object
@@ -1507,6 +1520,9 @@ components:
       required: [channel, answers]
       properties:
         channel: { type: string, enum: [forum, matrix] }
+        paper_id:
+          type: integer
+          description: 可选；试卷 ID，若提供则必须为候选人当前最新试卷，否则返回 409 stale_paper
         answers:
           type: object
           description: 键为题目 ID，值为选项字母数组（如 `{"1":["A"],"2":["A","B"]}`）

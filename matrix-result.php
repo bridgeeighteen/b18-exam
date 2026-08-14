@@ -24,6 +24,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     $userId = (int)($_POST['user_id'] ?? 0);
+    $paperId = (int)($_POST['paper_id'] ?? 0);
 
     // 免考礼仪测试：仅当数据库注解（matrix_users.forum_oauth_user_id）与会话中的论坛用户一致时才可信
     if (isset($_POST['oauth_exempt']) && $_POST['oauth_exempt'] === '1') {
@@ -41,7 +42,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     if ($resultError === null) {
-        $submission = scoreSubmission('matrix', $userId, extractAnswerMap($_POST));
+        $submission = scoreSubmission('matrix', $userId, extractAnswerMap($_POST), $paperId > 0 ? $paperId : null);
 
         if (isset($submission['error'])) {
             if ($submission['error']['code'] === 'time_violation') {

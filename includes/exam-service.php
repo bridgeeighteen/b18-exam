@@ -66,7 +66,8 @@ function verifyTurnstileToken(string $token): array
 
 // 登记论坛测试候选人（信息登记页与 POST /v1/candidates 共用）。
 // $matrixMxid 非空表示已通过 Matrix 账号 OAuth 验证，礼仪题免考（仅由会话或受信任的调用方传入）。
-// 返回 ['candidate' => array] 或 ['errors' => array] / ['error' => ['code' =>, 'message' =>]]。
+// 返回 ['candidate' => array, 'matrix_oauth_mxid' => ?string, 'restarted' => bool]
+// 或 ['errors' => array] / ['error' => ['code' =>, 'message' =>]]。
 function registerForumCandidate(string $username, string $email, array $categories, ?string $matrixMxid = null): array
 {
     $username = trim($username);
@@ -106,7 +107,10 @@ function registerForumCandidate(string $username, string $email, array $categori
     $stmt->execute([$email]);
     $existing = $stmt->fetch();
 
+    $restarted = false;
+
     if ($existing) {
+        $restarted = true;
         $userId = (int)$existing['id'];
         if ($matrixMxid !== null) {
             $stmt = $db->prepare('UPDATE users SET selected_categories = ?, matrix_oauth_mxid = ?, matrix_oauth_verified_at = NOW() WHERE id = ?');
@@ -142,12 +146,13 @@ function registerForumCandidate(string $username, string $email, array $categori
             'matrix_oauth_mxid' => $row['matrix_oauth_mxid'] !== null ? (string)$row['matrix_oauth_mxid'] : null,
         ],
         'matrix_oauth_mxid' => $matrixMxid,
+        'restarted' => $restarted,
     ];
 }
 
 // 登记 Matrix（千万桥）测试候选人（matrix-exam.php 与 POST /v1/candidates 共用）。
 // $forumOauthUserId 非空表示已通过论坛账号 OAuth 验证，礼仪测试免考（仅由会话或受信任的调用方传入）。
-// 返回 ['candidate' => array, 'forum_oauth_exempt' => bool, 'username_notice' => ?string]
+// 返回 ['candidate' => array, 'forum_oauth_exempt' => bool, 'username_notice' => ?string, 'restarted' => bool]
 // 或 ['errors' => array] / ['error' => ['code' =>, 'message' =>]]。
 function registerMatrixCandidate(string $username, string $email, ?int $forumOauthUserId = null): array
 {
@@ -180,18 +185,41 @@ function registerMatrixCandidate(string $username, string $email, ?int $forumOau
     }
 
     $usernameNotice = null;
+    $restarted = false;
+
     $stmt = $db->prepare('SELECT id FROM matrix_users WHERE username = ?');
     $stmt->execute([$username]);
     $existing = $stmt->fetch();
 
-    if ($existing) {
+    if (!$existing) {
+        // 中途退出后重新登记：用户名未匹配时按邮箱查找历史记录并复用，
+        // 允许调整期望用户名而不产生重复记录
+        $stmt = $db->prepare('SELECT id FROM matrix_users WHERE email = ? ORDER BY id DESC LIMIT 1');
+        $stmt->execute([$email]);
+        $existing = $stmt->fetch();
+
+        if ($existing) {
+            $restarted = true;
+            $userId = (int)$existing['id'];
+            $stmt = $db->prepare('UPDATE matrix_users SET username = ? WHERE id = ?');
+            $stmt->execute([$username, $userId]);
+            if ($forumOauthUserId !== null) {
+                $stmt = $db->prepare('UPDATE matrix_users SET forum_oauth_user_id = ?, forum_oauth_verified_at = NOW() WHERE id = ?');
+                $stmt->execute([$forumOauthUserId, $userId]);
+            }
+            $usernameNotice = '该邮箱此前曾在本系统登记过，已更新登记的期望用户名并重置测试进度。';
+        }
+    } else {
+        $restarted = true;
         $userId = (int)$existing['id'];
         $usernameNotice = '该用户名此前曾在本系统登记过。你可以继续使用该用户名，也可以在后续实际注册时稍作调整。';
         if ($forumOauthUserId !== null) {
             $stmt = $db->prepare('UPDATE matrix_users SET forum_oauth_user_id = ?, forum_oauth_verified_at = NOW() WHERE id = ?');
             $stmt->execute([$forumOauthUserId, $userId]);
         }
-    } else {
+    }
+
+    if (!$existing) {
         if ($forumOauthUserId !== null) {
             $stmt = $db->prepare('INSERT INTO matrix_users (username, email, forum_oauth_user_id, forum_oauth_verified_at) VALUES (?, ?, ?, NOW())');
             $stmt->execute([$username, $email, $forumOauthUserId]);
@@ -218,6 +246,7 @@ function registerMatrixCandidate(string $username, string $email, ?int $forumOau
         ],
         'forum_oauth_exempt' => $forumOauthUserId !== null,
         'username_notice' => $usernameNotice,
+        'restarted' => $restarted,
     ];
 }
 
@@ -350,7 +379,9 @@ function formatPublicQuestion(array $row): array
 
 // 提交答卷并计分：返回 ['score', 'passed', 'etiquette_exempt', 'credential']，
 // 或 ['error' => ['code' =>, 'message' =>]]（如超时作弊 / 未生成试卷 / 用户不存在）。
-function scoreSubmission(string $channel, int $candidateId, array $answers): array
+// $paperId 非空时校验提交必须对应候选人当前最新试卷，防止中途退出后重新登记时
+// 旧页面（旧试卷）的延迟提交污染新一次测试（stale_paper）。
+function scoreSubmission(string $channel, int $candidateId, array $answers, ?int $paperId = null): array
 {
     $channel = $channel === 'matrix' ? 'matrix' : 'forum';
 
@@ -368,6 +399,10 @@ function scoreSubmission(string $channel, int $candidateId, array $answers): arr
     $paperRow = $stmt->fetch();
     if ($paperRow === false) {
         return ['error' => ['code' => 'no_paper', 'message' => '尚未生成试卷，请先在信息登记页面登记并开始测试。']];
+    }
+
+    if ($paperId !== null && (int)$paperRow['id'] !== $paperId) {
+        return ['error' => ['code' => 'stale_paper', 'message' => '该答卷对应的试卷已过期（测试已重新开始）。请返回信息登记页面重新登记并重新开始测试。']];
     }
 
     $etiquetteExempt = (int)$paperRow['etiquette_exempt'] === 1;

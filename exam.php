@@ -16,6 +16,8 @@ $matrixMxid = null;
 $user = null;
 $questions = [];
 $examError = null;
+$restarted = false;
+$paperId = null;
 
 if (FORUM_CLOSED) {
 } else {
@@ -49,12 +51,14 @@ if (FORUM_CLOSED) {
                 $examError = '错误：' . implode(' ', $result['errors']);
             } else {
                 $user = $result['candidate'];
+                $restarted = !empty($result['restarted']);
 
                 $paperResult = buildExamPaper('forum', (int)$user['id']);
                 if (isset($paperResult['error'])) {
                     $examError = $paperResult['error']['message'];
                 } else {
                     $questions = $paperResult['paper']['questions'];
+                    $paperId = (int)$paperResult['paper']['id'];
                 }
             }
         }
@@ -133,6 +137,9 @@ if ($examError !== null) {
     </div>
 </div>
 <div class="page page-tight mx-auto">
+    <?php if ($restarted) : ?>
+        <div class="alert alert-info" role="alert">检测到该邮箱此前已登记，测试进度已重置并重新计时。</div>
+    <?php endif; ?>
     <?php if ($matrixMxid !== null) : ?>
         <div class="alert alert-info" role="alert">礼仪测试免考：你已通过 Matrix 账号（<?php echo htmlspecialchars($matrixMxid); ?>）验证，本测试不包含基本礼仪题，该部分将直接获得满分。</div>
     <?php endif; ?>
@@ -162,6 +169,7 @@ if ($examError !== null) {
 
 <form id="examForm" action="result.php" method="post">
     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(generateCSRFToken()); ?>">
+    <input type="hidden" name="paper_id" value="<?php echo htmlspecialchars($paperId ?? '', ENT_QUOTES, 'UTF-8'); ?>">
     <input type="hidden" name="user_id" value="<?php echo htmlspecialchars(isset($user['id']) ? $user['id'] : '', ENT_QUOTES, 'UTF-8'); ?>">
     <?php
     $questionNumber = 1; // 初始化题号
